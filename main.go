@@ -2,42 +2,96 @@ package main
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
 	"net"
+	"time"
 )
 
+const delimeter byte = 0
+const address string = "docker72:3242"
+
+type NCCN struct {
+	Request Request
+}
+
+type Request struct {
+	Name   string `xml:"name,attr"`
+	Params Params
+}
+
+type Params struct {
+	Login       string `xml:"login,attr"`
+	MaxProtocol int    `xml:"max_protocol,attr"`
+	MinProtocol int    `xml:"min_protocol,attr"`
+	Role        string `xml:"role,attr"`
+}
+
 func main() {
-	err := connect("docker72:3242")
+	fmt.Println("Started")
+
+	conn, err := connect(address)
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer conn.Close()
+
+	time.Sleep(time.Second * 3)
+
+	fmt.Println("Exit")
 }
 
-func connect(address string) error {
-	RegisterPeer := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<NCCN>
-<Request name="RegisterPeer">
-<Params login="naucrm" max_protocol="0" min_protocol="0" role="service"/>
-</Request>
-</NCCN>`
+func sender(conn net.Conn, commands <-chan NCCN) {
+	cmd := <-commands
+	output, err := xml.MarshalIndent(cmd, "  ", "    ")
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
 
-	fmt.Println("Started")
+	conn.Write(output)
+	conn.Write([]byte{delimeter})
+	fmt.Print("Sent: ")
+	fmt.Println(string(output))
+}
 
+func receiver(conn net.Conn) {
+	var inQueue = make(chan string)
+	go commandParser(inQueue)
+
+	bufReader := bufio.NewReader(conn)
+	for {
+		msg, err := bufReader.ReadString(delimeter)
+		if err != nil {
+			break
+		}
+		fmt.Print("Received: ")
+		fmt.Println(msg)
+		inQueue <- msg
+	}
+}
+
+func commandParser(strCommands <-chan string) {
+	// msg := <-strCommands
+}
+
+func connect(address string) (net.Conn, error) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	conn.Write([]byte(RegisterPeer))
-	conn.Write([]byte("\000"))
-	fmt.Println("Sent: " + RegisterPeer)
+	fmt.Println("Connected")
 
-	status, err := bufio.NewReader(conn).ReadString(0)
-	if err != nil {
-		return err
-	}
+	var outChannel = make(chan NCCN)
 
-	fmt.Println("Received: " + status)
+	go sender(conn, outChannel)
+	go receiver(conn)
 
-	return nil
+	params := Params{Login: "naucrm", MaxProtocol: 0, MinProtocol: 0, Role: "service"}
+	registerPeer := Request{Name: "RegisterPeer", Params: params}
+	registerPeerNccn := NCCN{Request: registerPeer}
+
+	outChannel <- registerPeerNccn
+
+	return conn, nil
 }
