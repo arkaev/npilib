@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/xml"
 	"fmt"
 	"net"
 )
@@ -25,19 +26,34 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 
 	fmt.Println("Connected")
 
-	var outChannel = make(chan NCCN)
+	var outChannel = make(chan *Node)
 
 	go Sender(conn, outChannel)
-	go Receiver(conn)
+	go Receiver(conn, outChannel)
 
 	outChannel <- registerPeer()
 
 	return conn, nil
 }
 
-func registerPeer() NCCN {
-	return NCCN{
-		Request: Request{Name: "RegisterPeer",
-			Params: []Params{
-				Params{Login: "naucrm", MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
+func registerPeer() *Node {
+	paramAttrs := make(map[string]string)
+	paramAttrs["login"] = "naucrm"
+	paramAttrs["max_protocol"] = "0"
+	paramAttrs["min_protocol"] = "0"
+	paramAttrs["role"] = "service"
+	param := &Node{
+		XMLName:    xml.Name{Local: "Params"},
+		Attributes: paramAttrs}
+
+	requestAttrs := make(map[string]string)
+	requestAttrs["name"] = "RegisterPeer"
+	request := &Node{
+		XMLName:    xml.Name{Local: "Request"},
+		Nodes:      []*Node{param},
+		Attributes: requestAttrs}
+
+	return &Node{
+		XMLName: xml.Name{Local: "NCCN"},
+		Nodes:   []*Node{request}}
 }
