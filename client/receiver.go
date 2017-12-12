@@ -9,16 +9,11 @@ import (
 	"time"
 )
 
-type Receiver struct {
-	handlers map[string]Handler
-}
-
-//Start receiving commands from socket
-func (r *Receiver) Start(conn net.Conn) {
+//Receiver for commands from socket
+func Receiver(conn net.Conn, handlers map[string]Handler) {
 	socketToParser := make(chan string)
 
-	parser := &commandParser{handlers: r.handlers}
-	go parser.parse(socketToParser)
+	go commandParser(socketToParser, handlers)
 
 	bufReader := bufio.NewReader(conn)
 	for {
@@ -38,11 +33,7 @@ func (r *Receiver) Start(conn net.Conn) {
 	}
 }
 
-type commandParser struct {
-	handlers map[string]Handler
-}
-
-func (p *commandParser) parse(socketToParser <-chan string) {
+func commandParser(socketToParser <-chan string, handlers map[string]Handler) {
 	for {
 		cmdStr := <-socketToParser
 		root, err := parseCommand(cmdStr)
@@ -54,7 +45,7 @@ func (p *commandParser) parse(socketToParser <-chan string) {
 		for _, request := range root.Nodes {
 			commandName := request.Attributes["name"]
 
-			handler, exist := p.handlers[commandName]
+			handler, exist := handlers[commandName]
 			if exist {
 				handler.Process(request)
 			} else {
