@@ -26,3 +26,25 @@ func RegisterPeerCommand(auth *Auth) NCCCommand {
 			Params: []Params{
 				Params{Login: auth.Login, MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
 }
+
+func SubscribeCommand(list string) NCCCommand {
+	type Params struct {
+		List    string `xml:"list,attr"`
+		Enabled bool   `xml:"enabled,attr"`
+		Instant bool   `xml:"instant,attr"`
+	}
+
+	type Request struct {
+		Name   string `xml:"name,attr"`
+		Params []Params
+	}
+
+	type NCC struct {
+		Request Request
+	}
+
+	return NCC{
+		Request: Request{Name: "Subscribe",
+			Params: []Params{
+				Params{List: list, Enabled: true, Instant: true}}}}
+}

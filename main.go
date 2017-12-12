@@ -28,7 +28,7 @@ func main() {
 		log.Println(err)
 	}
 	defer conn.Close()
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 5000)
 
 	log.Println("Exit")
 }

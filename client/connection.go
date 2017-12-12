@@ -7,6 +7,15 @@ import (
 
 const delimeter byte = 0
 
+//ClientConfig contains bus registration info
+type ClientConfig struct {
+	AllowEncoding   string
+	Domain          string
+	Node            string
+	Peer            string
+	ProtocolVersion int
+}
+
 //Connect create connection by address and keyFile
 func Connect(address string, keyFile string) (net.Conn, error) {
 
@@ -27,10 +36,13 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 
 	objectToSocket := make(chan NCCCommand)
 	handlers := make(map[string]Handler)
-	handlers["Echo"] = &EchoHandler{outCommands: objectToSocket}
-	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, outCommands: objectToSocket}
-	handlers["RegisterPeer"] = &RegisterPeerHandler{outCommands: objectToSocket}
-	handlers["Register"] = &RegisterHandler{}
+
+	handlers["Echo"] = &EchoHandler{out: objectToSocket}
+	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: objectToSocket}
+	client := &ClientConfig{}
+	handlers["RegisterPeer"] = &RegisterPeerHandler{config: client, out: objectToSocket}
+	handlers["Register"] = &RegisterHandler{out: objectToSocket}
+	handlers["Subscribe"] = &DoNothingHandler{}
 
 	go Sender(conn, objectToSocket)
 	go Receiver(conn, handlers)

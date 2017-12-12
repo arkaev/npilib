@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -16,8 +17,8 @@ type Handler interface {
 //AuthenificateHandler for "Authenificate" command
 type AuthenificateHandler struct {
 	Handler
-	digest      string
-	outCommands chan<- NCCCommand
+	digest string
+	out    chan<- NCCCommand
 }
 
 //Process "Authenificate" command
@@ -48,7 +49,7 @@ func (h *AuthenificateHandler) Process(node *Node) {
 		Response *Response
 	}
 
-	h.outCommands <- &NCCN{
+	h.out <- &NCCN{
 		Response: &Response{
 			Name:  "Authenticate",
 			Param: &Param{Name: "response", Value: value}}}
@@ -57,11 +58,20 @@ func (h *AuthenificateHandler) Process(node *Node) {
 //RegisterPeerHandler for "RegisterPeer" command
 type RegisterPeerHandler struct {
 	Handler
-	outCommands chan<- NCCCommand
+	config *ClientConfig
+	out    chan<- NCCCommand
 }
 
 //Process "RegisterPeer" command
 func (h *RegisterPeerHandler) Process(node *Node) {
+	paramsNode := node.Nodes[0]
+
+	h.config.AllowEncoding = paramsNode.Attributes["allow_encoding"]
+	h.config.Domain = paramsNode.Attributes["domain"]
+	h.config.Node = paramsNode.Attributes["node"]
+	h.config.Peer = paramsNode.Attributes["peer"]
+	h.config.ProtocolVersion, _ = strconv.Atoi(paramsNode.Attributes["protocol_version"])
+
 	type Params struct {
 		ProtocolVersion int `xml:"protocol_version,attr"`
 	}
@@ -76,7 +86,7 @@ func (h *RegisterPeerHandler) Process(node *Node) {
 		Request *Request
 	}
 
-	h.outCommands <- &NCC{
+	h.out <- &NCC{
 		Request: &Request{
 			Name:   "Register",
 			Params: &Params{ProtocolVersion: 600}}}
@@ -85,7 +95,7 @@ func (h *RegisterPeerHandler) Process(node *Node) {
 //EchoHandler for "Echo" command
 type EchoHandler struct {
 	Handler
-	outCommands chan<- NCCCommand
+	out chan<- NCCCommand
 }
 
 //Process "Echo" command
@@ -101,18 +111,30 @@ func (h *EchoHandler) Process(node *Node) {
 
 	nccn := &NCCN{Response: &Response{Name: "Echo"}}
 
-	h.outCommands <- nccn
+	h.out <- nccn
 }
 
 //RegisterHandler for "Register" command
 type RegisterHandler struct {
 	Handler
+	out chan<- NCCCommand
 }
 
 //Process "Register" command
 func (h *RegisterHandler) Process(node *Node) {
 	log.Println("Successful registration")
-	//TODO add handlers
+
+	h.out <- SubscribeCommand("callslist")
+	h.out <- SubscribeCommand("buddylist")
+}
+
+//DoNothingHandler bulk handler
+type DoNothingHandler struct {
+	Handler
+}
+
+//Process bulk
+func (h *DoNothingHandler) Process(node *Node) {
 }
 
 func calculateMD5(digest, nonce, method, uri string) string {
