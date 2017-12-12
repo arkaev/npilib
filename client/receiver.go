@@ -2,14 +2,22 @@ package client
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net"
 )
 
-func Receiver(conn net.Conn, outCommands chan<- *Node) {
-	var inQueue = make(chan string)
-	go commandParser(inQueue, outCommands)
+type Receiver struct {
+	handlers map[string]Handler
+}
+
+//Start receiving commands from socket
+func (r *Receiver) Start(conn net.Conn) {
+	socketToParser := make(chan string)
+
+	parser := &commandParser{handlers: r.handlers}
+	go parser.parse(socketToParser)
 
 	bufReader := bufio.NewReader(conn)
 	for {
@@ -20,36 +28,44 @@ func Receiver(conn net.Conn, outCommands chan<- *Node) {
 				break
 			}
 		} else {
-			fmt.Print("Received: ")
-			fmt.Println(msg)
-			inQueue <- msg
+			fmt.Print("Received:\n" + msg)
+			socketToParser <- msg
 		}
 	}
 }
 
-func commandParser(strCommands <-chan string, outCommands chan<- *Node) {
-	cmdStr := <-strCommands
-	root, err := ParseCommand(cmdStr)
-	if err != nil {
-		fmt.Printf("error parsing command: %v\n", err)
-		return
-	}
+type commandParser struct {
+	handlers map[string]Handler
+}
 
-	for _, request := range root.Nodes {
-		commandName := request.Attributes["name"]
-
-		var err error
-
-		switch commandName {
-		case "Authenticate":
-			HandleAuthenificate(request, outCommands)
-		default:
-			fmt.Printf("Unknown command: %s\n", commandName)
-		}
-
+func (p *commandParser) parse(socketToParser <-chan string) {
+	for {
+		cmdStr := <-socketToParser
+		root, err := parseCommand(cmdStr)
 		if err != nil {
-			fmt.Printf("Error: %s\n", err)
+			fmt.Printf("error parsing command: %v\n", err)
 			return
 		}
+
+		for _, request := range root.Nodes {
+			commandName := request.Attributes["name"]
+
+			handler, exist := p.handlers[commandName]
+			if exist {
+				handler.Process(request)
+			} else {
+				fmt.Printf("Unknown command: %s\n", commandName)
+			}
+		}
 	}
+}
+
+func parseCommand(cmd string) (Node, error) {
+	n := Node{}
+	err := xml.Unmarshal([]byte(cmd), &n)
+	if err != nil {
+		return n, err
+	}
+
+	return n, nil
 }

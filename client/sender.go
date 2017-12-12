@@ -6,17 +6,26 @@ import (
 	"net"
 )
 
-func Sender(conn net.Conn, commands <-chan *Node) {
-	for {
-		cmd := <-commands
-		output, err := xml.MarshalIndent(cmd, "", "    ")
-		if err != nil {
-			fmt.Printf("error: %v\n", err)
-		}
+//Sender : marshal node and send bytes to socket
+func Sender(conn net.Conn, objectToSocket <-chan NCCCommand) {
+	dataToSocket := make(chan []byte)
+	go sendBytesToSocket(conn, dataToSocket)
 
-		conn.Write(output)
+	for {
+		obj := <-objectToSocket
+		data, err := xml.MarshalIndent(obj, "", "    ")
+		if err != nil {
+			fmt.Println("error: %v", err)
+		}
+		dataToSocket <- data
+	}
+}
+
+func sendBytesToSocket(conn net.Conn, dataToSocket <-chan []byte) {
+	for {
+		data := <-dataToSocket
+		conn.Write(data)
 		conn.Write([]byte{delimeter})
-		fmt.Print("Sent: ")
-		fmt.Println(string(output))
+		fmt.Println("Sent:\n" + string(data))
 	}
 }
