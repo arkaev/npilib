@@ -10,13 +10,13 @@ const delimeter byte = 0
 //Connect create connection by address and keyFile
 func Connect(address string, keyFile string) (net.Conn, error) {
 
-	md5, err := GetDigest(keyFile)
+	auth, err := GetAuthData(keyFile)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	log.Println("Digest: " + md5)
+	log.Println("Digest: " + auth.MD5)
 
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
@@ -28,7 +28,7 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	objectToSocket := make(chan NCCCommand)
 	handlers := make(map[string]Handler)
 	handlers["Echo"] = &EchoHandler{outCommands: objectToSocket}
-	handlers["Authenticate"] = &AuthenificateHandler{digest: md5, outCommands: objectToSocket}
+	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, outCommands: objectToSocket}
 	handlers["RegisterPeer"] = &RegisterPeerHandler{outCommands: objectToSocket}
 	handlers["Register"] = &RegisterHandler{}
 
@@ -37,12 +37,12 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	receiver := &Receiver{handlers}
 	go receiver.Start(conn)
 
-	objectToSocket <- registerPeer()
+	objectToSocket <- registerPeer(auth)
 
 	return conn, nil
 }
 
-func registerPeer() NCCCommand {
+func registerPeer(auth *Auth) NCCCommand {
 	type Params struct {
 		Login       string `xml:"login,attr"`
 		MaxProtocol int    `xml:"max_protocol,attr"`
@@ -62,5 +62,5 @@ func registerPeer() NCCCommand {
 	return NCCN{
 		Request: Request{Name: "RegisterPeer",
 			Params: []Params{
-				Params{Login: "naucrm", MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
+				Params{Login: auth.Login, MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
 }
