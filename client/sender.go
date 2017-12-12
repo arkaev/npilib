@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/xml"
-	"fmt"
+	"log"
 	"net"
 )
 
@@ -15,7 +15,7 @@ func Sender(conn net.Conn, objectToSocket <-chan NCCCommand) {
 		obj := <-objectToSocket
 		data, err := xml.MarshalIndent(obj, "", "    ")
 		if err != nil {
-			fmt.Println("error: %v", err)
+			log.Println("error: %v", err)
 		}
 		dataToSocket <- data
 	}
@@ -26,6 +26,6 @@ func sendBytesToSocket(conn net.Conn, dataToSocket <-chan []byte) {
 		data := <-dataToSocket
 		conn.Write(data)
 		conn.Write([]byte{delimeter})
-		fmt.Println("Sent:\n" + string(data))
+		log.Println("Sent:\n" + string(data))
 	}
 }

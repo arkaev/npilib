@@ -3,8 +3,8 @@ package client
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
+	"log"
 	"strings"
 )
 
@@ -111,7 +111,7 @@ type RegisterHandler struct {
 
 //Process "Register" command
 func (h *RegisterHandler) Process(node *Node) {
-	fmt.Println("Successful registration")
+	log.Println("Successful registration")
 	//TODO add handlers
 }
 

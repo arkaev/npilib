@@ -1,7 +1,7 @@
 package client
 
 import (
-	"fmt"
+	"log"
 	"net"
 )
 
@@ -12,18 +12,18 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 
 	md5, err := GetDigest(keyFile)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
-	fmt.Println("Digest: " + md5)
+	log.Println("Digest: " + md5)
 
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Connected")
+	log.Println("Connected")
 
 	objectToSocket := make(chan NCCCommand)
 	handlers := make(map[string]Handler)

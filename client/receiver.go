@@ -3,8 +3,8 @@ package client
 import (
 	"bufio"
 	"encoding/xml"
-	"fmt"
 	"io"
+	"log"
 	"net"
 	"time"
 )
@@ -28,11 +28,11 @@ func (r *Receiver) Start(conn net.Conn) {
 				//sleep if no data
 				time.Sleep(time.Millisecond * 10)
 			} else {
-				fmt.Println("Unexpected read error: ", err)
+				log.Println("Unexpected read error: ", err)
 				break
 			}
 		} else {
-			fmt.Print("Received:\n" + msg)
+			log.Println("Received:\n" + msg)
 			socketToParser <- msg
 		}
 	}
@@ -47,7 +47,7 @@ func (p *commandParser) parse(socketToParser <-chan string) {
 		cmdStr := <-socketToParser
 		root, err := parseCommand(cmdStr)
 		if err != nil {
-			fmt.Printf("error parsing command: %v\n", err)
+			log.Printf("error parsing command: %v\n", err)
 			return
 		}
 
@@ -58,7 +58,7 @@ func (p *commandParser) parse(socketToParser <-chan string) {
 			if exist {
 				handler.Process(request)
 			} else {
-				fmt.Printf("Unknown command: %s\n", commandName)
+				log.Printf("Unknown command: %s\n", commandName)
 			}
 		}
 	}

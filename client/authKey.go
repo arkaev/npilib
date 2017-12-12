@@ -2,8 +2,8 @@ package client
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -11,7 +11,7 @@ import (
 func GetDigest(keyFile string) (string, error) {
 	xmlFile, err := os.Open(keyFile)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		log.Println("Error opening file:", err)
 		return "", err
 	}
 
@@ -32,7 +32,7 @@ func GetDigest(keyFile string) (string, error) {
 
 	bytes, err := ioutil.ReadAll(xmlFile)
 	if err != nil {
-		fmt.Println("Error reading key file:", err)
+		log.Println("Error reading key file:", err)
 		return "", err
 	}
 
