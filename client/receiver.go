@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 type Receiver struct {
@@ -23,7 +24,10 @@ func (r *Receiver) Start(conn net.Conn) {
 	for {
 		msg, err := bufReader.ReadString(delimeter)
 		if err != nil {
-			if err != io.EOF {
+			if err == io.EOF {
+				//sleep if no data
+				time.Sleep(time.Millisecond * 10)
+			} else {
 				fmt.Println("Unexpected read error: ", err)
 				break
 			}

@@ -19,7 +19,6 @@ func main() {
 		fmt.Println(err)
 	}
 	defer conn.Close()
-
 	time.Sleep(time.Millisecond * 1000)
 
 	fmt.Println("Exit")
