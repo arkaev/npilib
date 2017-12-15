@@ -7,8 +7,8 @@ import (
 
 const delimeter byte = 0
 
-//ClientConfig contains bus registration info
-type ClientConfig struct {
+//RegistrationInfo contains bus registration info
+type RegistrationInfo struct {
 	AllowEncoding   string
 	Domain          string
 	Node            string
@@ -19,7 +19,7 @@ type ClientConfig struct {
 //Connect create connection by address and keyFile
 func Connect(address string, keyFile string) (net.Conn, error) {
 
-	auth, err := GetAuthData(keyFile)
+	auth, err := getAuthData(keyFile)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -39,8 +39,8 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 
 	handlers["Echo"] = &EchoHandler{out: objectToSocket}
 	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: objectToSocket}
-	client := &ClientConfig{}
-	handlers["RegisterPeer"] = &RegisterPeerHandler{config: client, out: objectToSocket}
+	client := RegistrationInfo{}
+	handlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: objectToSocket}
 	handlers["Register"] = &RegisterHandler{out: objectToSocket}
 	handlers["Subscribe"] = &DoNothingHandler{}
 

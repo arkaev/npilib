@@ -15,7 +15,7 @@ func Sender(conn net.Conn, objectToSocket <-chan NCCCommand) {
 		obj := <-objectToSocket
 		data, err := xml.MarshalIndent(obj, "", "    ")
 		if err != nil {
-			log.Println("error: %v", err)
+			log.Printf("error: %v\n", err)
 		}
 		dataToSocket <- data
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 //Auth key data
-type Auth struct {
+type auth struct {
 	Login     string `xml:"login,attr"`
 	Realm     string `xml:"realm,attr"`
 	MD5       string `xml:"md5,attr"`
@@ -18,15 +18,15 @@ type Auth struct {
 }
 
 type authFile struct {
-	Auth *Auth
+	Auth *auth
 }
 
 // GetAuthData extract digest from key file
-func GetAuthData(keyFile string) (*Auth, error) {
+func getAuthData(keyFile string) (*auth, error) {
 	xmlFile, err := os.Open(keyFile)
 	if err != nil {
 		log.Println("Error opening file:", err)
-		return &Auth{}, err
+		return &auth{}, err
 	}
 
 	defer xmlFile.Close()
@@ -34,7 +34,7 @@ func GetAuthData(keyFile string) (*Auth, error) {
 	bytes, err := ioutil.ReadAll(xmlFile)
 	if err != nil {
 		log.Println("Error reading key file:", err)
-		return &Auth{}, err
+		return &auth{}, err
 	}
 
 	var authFile authFile

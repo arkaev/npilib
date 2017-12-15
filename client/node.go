@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+//Node represend DOM structure
 type Node struct {
 	XMLName    xml.Name
 	Attributes map[string]string
@@ -12,6 +13,7 @@ type Node struct {
 	Nodes      []*Node
 }
 
+//UnmarshalXML overrides standard unmarshalling
 func (e *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var nodes []*Node
 	var done bool
@@ -41,6 +43,7 @@ func (e *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+//MarshalXML overrides standard marshalling
 func (e *Node) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	start.Name = e.XMLName
 

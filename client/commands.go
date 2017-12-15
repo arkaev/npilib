@@ -4,7 +4,8 @@ package client
 type NCCCommand interface {
 }
 
-func RegisterPeerCommand(auth *Auth) NCCCommand {
+//RegisterPeerCommand constuct
+func RegisterPeerCommand(auth *auth) NCCCommand {
 	type Params struct {
 		Login       string `xml:"login,attr"`
 		MaxProtocol int    `xml:"max_protocol,attr"`
@@ -14,19 +15,20 @@ func RegisterPeerCommand(auth *Auth) NCCCommand {
 
 	type Request struct {
 		Name   string `xml:"name,attr"`
-		Params []Params
+		Params []*Params
 	}
 
 	type NCCN struct {
-		Request Request
+		Request *Request
 	}
 
-	return NCCN{
-		Request: Request{Name: "RegisterPeer",
-			Params: []Params{
-				Params{Login: auth.Login, MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
+	return &NCCN{
+		Request: &Request{Name: "RegisterPeer",
+			Params: []*Params{
+				&Params{Login: auth.Login, MaxProtocol: 0, MinProtocol: 0, Role: "service"}}}}
 }
 
+//SubscribeCommand constuct
 func SubscribeCommand(list string) NCCCommand {
 	type Params struct {
 		List    string `xml:"list,attr"`
@@ -36,15 +38,15 @@ func SubscribeCommand(list string) NCCCommand {
 
 	type Request struct {
 		Name   string `xml:"name,attr"`
-		Params []Params
+		Params []*Params
 	}
 
 	type NCC struct {
-		Request Request
+		Request *Request
 	}
 
-	return NCC{
-		Request: Request{Name: "Subscribe",
-			Params: []Params{
-				Params{List: list, Enabled: true, Instant: true}}}}
+	return &NCC{
+		Request: &Request{Name: "Subscribe",
+			Params: []*Params{
+				&Params{List: list, Enabled: true, Instant: true}}}}
 }

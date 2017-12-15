@@ -72,7 +72,7 @@ func (h *AuthenificateHandler) Handle() {
 //RegisterPeerHandler for "RegisterPeer" command
 type RegisterPeerHandler struct {
 	Handler
-	config          *ClientConfig
+	config          *RegistrationInfo
 	out             chan<- NCCCommand
 	AllowEncoding   string
 	Domain          string
