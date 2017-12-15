@@ -46,7 +46,8 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	handlers["Success"] = &DoNothingHandler{}
 	handlers["Failure"] = &DoNothingHandler{}
 
-	handlers["FullBuddyList"] = &DoNothingHandler{}
+	handlers["FullCallsList"] = &FullCallsListHandler{}
+	handlers["FullBuddyList"] = &FullBuddyListHandler{}
 	handlers["ShortBuddyList"] = &DoNothingHandler{}
 	handlers["BuddyListDiff"] = &DoNothingHandler{}
 

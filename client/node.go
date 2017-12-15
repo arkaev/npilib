@@ -63,3 +63,15 @@ func (e *Node) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 		Nodes: e.Nodes,
 	}, start)
 }
+
+//NodesByName return nodes arrays with name
+func (e *Node) NodesByName(name string) []*Node {
+	result := make([]*Node, 0)
+
+	for _, node := range e.Nodes {
+		if node.XMLName.Local == name {
+			result = append(result, node)
+		}
+	}
+	return result
+}
