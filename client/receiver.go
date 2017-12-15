@@ -10,58 +10,65 @@ import (
 )
 
 //Receiver for commands from socket
-func Receiver(conn net.Conn, handlers map[string]Handler) {
-	socketToParser := make(chan string)
+func startReceiver(conn net.Conn, handlers map[string]Handler) {
+	socketToStrCommand := make(chan string)
+	strToNode := make(chan *Node)
+	nodeToHanlderChannel := make(chan Handler)
 
-	go commandParser(socketToParser, handlers)
-
-	bufReader := bufio.NewReader(conn)
-	for {
-		msg, err := bufReader.ReadString(delimeter)
-		if err != nil {
-			if err == io.EOF {
-				//sleep if no data
-				time.Sleep(time.Millisecond * 10)
+	go func() {
+		bufReader := bufio.NewReader(conn)
+		for {
+			msg, err := bufReader.ReadString(delimeter)
+			if err != nil {
+				if err == io.EOF {
+					//sleep if no data
+					time.Sleep(time.Millisecond * 10)
+				} else {
+					log.Println("Unexpected read error: ", err)
+					break
+				}
 			} else {
-				log.Println("Unexpected read error: ", err)
-				break
+				log.Println("Received:\n" + msg)
+				socketToStrCommand <- msg
 			}
-		} else {
-			log.Println("Received:\n" + msg)
-			socketToParser <- msg
 		}
-	}
-}
+	}()
 
-func commandParser(socketToParser <-chan string, handlers map[string]Handler) {
-	for {
-		cmdStr := <-socketToParser
-		root, err := parseCommand(cmdStr)
-		if err != nil {
-			log.Printf("error parsing command: %v\n", err)
-			return
+	go func() {
+		for {
+			cmdStr := <-socketToStrCommand
+
+			root := Node{}
+			err := xml.Unmarshal([]byte(cmdStr), &root)
+			if err != nil {
+				log.Printf("error parsing command: %v\n", err)
+			}
+
+			for _, event := range root.Nodes {
+				strToNode <- event
+			}
 		}
+	}()
 
-		for _, request := range root.Nodes {
-			commandName := request.Attributes["name"]
+	go func() {
+		for {
+			event := <-strToNode
+			commandName := event.Attributes["name"]
 
 			handler, exist := handlers[commandName]
 			if exist {
-				handler.Unmarshal(request)
-				handler.Handle()
+				handler.Unmarshal(event)
+				nodeToHanlderChannel <- handler
 			} else {
 				log.Printf("Unknown command: %s\n", commandName)
 			}
 		}
-	}
-}
+	}()
 
-func parseCommand(cmd string) (Node, error) {
-	n := Node{}
-	err := xml.Unmarshal([]byte(cmd), &n)
-	if err != nil {
-		return n, err
-	}
-
-	return n, nil
+	go func() {
+		for {
+			handler := <-nodeToHanlderChannel
+			handler.Handle()
+		}
+	}()
 }

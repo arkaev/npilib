@@ -32,22 +32,22 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Println("Connected")
+	log.Println("Connected to socket")
 
-	objectToSocket := make(chan NCCCommand)
+	commandToSocket := make(chan NCCCommand)
 	handlers := make(map[string]Handler)
 
-	handlers["Echo"] = &EchoHandler{out: objectToSocket}
-	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: objectToSocket}
+	handlers["Echo"] = &EchoHandler{out: commandToSocket}
+	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: commandToSocket}
 	client := RegistrationInfo{}
-	handlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: objectToSocket}
-	handlers["Register"] = &RegisterHandler{out: objectToSocket}
+	handlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: commandToSocket}
+	handlers["Register"] = &RegisterHandler{out: commandToSocket}
 	handlers["Subscribe"] = &DoNothingHandler{}
 
-	go Sender(conn, objectToSocket)
-	go Receiver(conn, handlers)
+	startSender(conn, commandToSocket)
+	startReceiver(conn, handlers)
 
-	objectToSocket <- RegisterPeerCommand(auth)
+	commandToSocket <- RegisterPeerCommand(auth)
 
 	return conn, nil
 }
