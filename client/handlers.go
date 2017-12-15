@@ -11,27 +11,41 @@ import (
 
 //Handler process command with name
 type Handler interface {
-	Process(node *Node)
+	//Unmarshal node to command pojo
+	Unmarshal(node *Node)
+	//Handle command and process
+	Handle()
 }
 
 //AuthenificateHandler for "Authenificate" command
 type AuthenificateHandler struct {
 	Handler
 	digest string
-	out    chan<- NCCCommand
+
+	out        chan<- NCCCommand
+	algoritm   string
+	authScheme string
+	method     string
+	nonce      string
+	realm      string
+	uri        string
+	username   string
 }
 
-//Process "Authenificate" command
-func (h *AuthenificateHandler) Process(node *Node) {
-	//algoritm := node.Nodes[0].Attributes["algoritm"]
-	//auth_scheme := node.Nodes[0].Attributes["auth_scheme"]
-	method := node.Nodes[0].Attributes["method"]
-	nonce := node.Nodes[0].Attributes["nonce"]
-	//realm := node.Nodes[0].Attributes["realm"]
-	uri := node.Nodes[0].Attributes["uri"]
-	//username := node.Nodes[0].Attributes["username"]
+//Unmarshal "Authenificate" command
+func (h *AuthenificateHandler) Unmarshal(node *Node) {
+	h.algoritm = node.Nodes[0].Attributes["algoritm"]
+	h.authScheme = node.Nodes[0].Attributes["auth_scheme"]
+	h.method = node.Nodes[0].Attributes["method"]
+	h.nonce = node.Nodes[0].Attributes["nonce"]
+	h.realm = node.Nodes[0].Attributes["realm"]
+	h.uri = node.Nodes[0].Attributes["uri"]
+	h.username = node.Nodes[0].Attributes["username"]
+}
 
-	value := calculateMD5(h.digest, nonce, method, uri)
+//Handle "Authenificate" command
+func (h *AuthenificateHandler) Handle() {
+	value := calculateMD5(h.digest, h.nonce, h.method, h.uri)
 	value = strings.ToLower(value)
 
 	type Param struct {
@@ -58,19 +72,33 @@ func (h *AuthenificateHandler) Process(node *Node) {
 //RegisterPeerHandler for "RegisterPeer" command
 type RegisterPeerHandler struct {
 	Handler
-	config *ClientConfig
-	out    chan<- NCCCommand
+	config          *ClientConfig
+	out             chan<- NCCCommand
+	AllowEncoding   string
+	Domain          string
+	Node            string
+	Peer            string
+	ProtocolVersion int
 }
 
-//Process "RegisterPeer" command
-func (h *RegisterPeerHandler) Process(node *Node) {
+//Unmarshal "RegisterPeer" command
+func (h *RegisterPeerHandler) Unmarshal(node *Node) {
 	paramsNode := node.Nodes[0]
 
-	h.config.AllowEncoding = paramsNode.Attributes["allow_encoding"]
-	h.config.Domain = paramsNode.Attributes["domain"]
-	h.config.Node = paramsNode.Attributes["node"]
-	h.config.Peer = paramsNode.Attributes["peer"]
-	h.config.ProtocolVersion, _ = strconv.Atoi(paramsNode.Attributes["protocol_version"])
+	h.AllowEncoding = paramsNode.Attributes["allow_encoding"]
+	h.Domain = paramsNode.Attributes["domain"]
+	h.Node = paramsNode.Attributes["node"]
+	h.Peer = paramsNode.Attributes["peer"]
+	h.ProtocolVersion, _ = strconv.Atoi(paramsNode.Attributes["protocol_version"])
+}
+
+//Handle "RegisterPeer" command
+func (h *RegisterPeerHandler) Handle() {
+	h.config.AllowEncoding = h.AllowEncoding
+	h.config.Domain = h.Domain
+	h.config.Node = h.Node
+	h.config.Peer = h.Peer
+	h.config.ProtocolVersion = h.ProtocolVersion
 
 	type Params struct {
 		ProtocolVersion int `xml:"protocol_version,attr"`
@@ -98,8 +126,11 @@ type EchoHandler struct {
 	out chan<- NCCCommand
 }
 
-//Process "Echo" command
-func (h *EchoHandler) Process(node *Node) {
+//Unmarshal "Echo" command
+func (h *EchoHandler) Unmarshal(node *Node) {}
+
+//Handle "Echo" command
+func (h *EchoHandler) Handle() {
 	type Response struct {
 		Name string `xml:"name,attr"`
 	}
@@ -120,8 +151,11 @@ type RegisterHandler struct {
 	out chan<- NCCCommand
 }
 
-//Process "Register" command
-func (h *RegisterHandler) Process(node *Node) {
+//Unmarshal "Register" command
+func (h *RegisterHandler) Unmarshal(node *Node) {}
+
+//Handle "Register" command
+func (h *RegisterHandler) Handle() {
 	log.Println("Successful registration")
 
 	h.out <- SubscribeCommand("callslist")
@@ -133,8 +167,12 @@ type DoNothingHandler struct {
 	Handler
 }
 
-//Process bulk
-func (h *DoNothingHandler) Process(node *Node) {
+//Unmarshal bulk
+func (h *DoNothingHandler) Unmarshal(node *Node) {
+}
+
+//Handle bulk
+func (h *DoNothingHandler) Handle() {
 }
 
 func calculateMD5(digest, nonce, method, uri string) string {

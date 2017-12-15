@@ -47,7 +47,8 @@ func commandParser(socketToParser <-chan string, handlers map[string]Handler) {
 
 			handler, exist := handlers[commandName]
 			if exist {
-				handler.Process(request)
+				handler.Unmarshal(request)
+				handler.Handle()
 			} else {
 				log.Printf("Unknown command: %s\n", commandName)
 			}
