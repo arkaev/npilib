@@ -12,9 +12,32 @@ import (
 //Handler process command with name
 type Handler interface {
 	//Unmarshal node to command pojo
-	Unmarshal(node *Node)
+	Unmarshal(node *Node) Handler
 	//Handle command and process
 	Handle()
+}
+
+//CommonTagHandler if handlers have same root tag but different name-attribute
+type CommonTagHandler struct {
+	Handler
+	handlers map[string]Handler
+}
+
+//Unmarshal command for wrapper
+func (h *CommonTagHandler) Unmarshal(event *Node) Handler {
+	name := event.Attributes["name"]
+	handler, exist := h.handlers[name]
+	if exist {
+		wrapped := handler.Unmarshal(event)
+		return wrapped
+	}
+
+	log.Printf("Unknown handler: %s\n", name)
+	return nil
+}
+
+//Handle command for wrapper
+func (h *CommonTagHandler) Handle() {
 }
 
 //AuthenificateHandler for "Authenificate" command
@@ -33,7 +56,7 @@ type AuthenificateHandler struct {
 }
 
 //Unmarshal "Authenificate" command
-func (h *AuthenificateHandler) Unmarshal(node *Node) {
+func (h *AuthenificateHandler) Unmarshal(node *Node) Handler {
 	h.algoritm = node.Nodes[0].Attributes["algoritm"]
 	h.authScheme = node.Nodes[0].Attributes["auth_scheme"]
 	h.method = node.Nodes[0].Attributes["method"]
@@ -41,6 +64,8 @@ func (h *AuthenificateHandler) Unmarshal(node *Node) {
 	h.realm = node.Nodes[0].Attributes["realm"]
 	h.uri = node.Nodes[0].Attributes["uri"]
 	h.username = node.Nodes[0].Attributes["username"]
+
+	return h
 }
 
 //Handle "Authenificate" command
@@ -82,7 +107,7 @@ type RegisterPeerHandler struct {
 }
 
 //Unmarshal "RegisterPeer" command
-func (h *RegisterPeerHandler) Unmarshal(node *Node) {
+func (h *RegisterPeerHandler) Unmarshal(node *Node) Handler {
 	paramsNode := node.Nodes[0]
 
 	h.AllowEncoding = paramsNode.Attributes["allow_encoding"]
@@ -90,6 +115,8 @@ func (h *RegisterPeerHandler) Unmarshal(node *Node) {
 	h.Node = paramsNode.Attributes["node"]
 	h.Peer = paramsNode.Attributes["peer"]
 	h.ProtocolVersion, _ = strconv.Atoi(paramsNode.Attributes["protocol_version"])
+
+	return h
 }
 
 //Handle "RegisterPeer" command
@@ -127,7 +154,9 @@ type EchoHandler struct {
 }
 
 //Unmarshal "Echo" command
-func (h *EchoHandler) Unmarshal(node *Node) {}
+func (h *EchoHandler) Unmarshal(node *Node) Handler {
+	return h
+}
 
 //Handle "Echo" command
 func (h *EchoHandler) Handle() {
@@ -152,7 +181,9 @@ type RegisterHandler struct {
 }
 
 //Unmarshal "Register" command
-func (h *RegisterHandler) Unmarshal(node *Node) {}
+func (h *RegisterHandler) Unmarshal(node *Node) Handler {
+	return h
+}
 
 //Handle "Register" command
 func (h *RegisterHandler) Handle() {
@@ -168,7 +199,8 @@ type DoNothingHandler struct {
 }
 
 //Unmarshal bulk
-func (h *DoNothingHandler) Unmarshal(node *Node) {
+func (h *DoNothingHandler) Unmarshal(node *Node) Handler {
+	return h
 }
 
 //Handle bulk

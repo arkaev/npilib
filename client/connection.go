@@ -37,12 +37,33 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	commandToSocket := make(chan NCCCommand)
 	handlers := make(map[string]Handler)
 
-	handlers["Echo"] = &EchoHandler{out: commandToSocket}
-	handlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: commandToSocket}
+	handlers["Event"] = &DoNothingHandler{}
+	handlers["Command"] = &DoNothingHandler{}
+
+	handlers["DialPlan"] = &DoNothingHandler{}
+	handlers["DialplanUploadResult"] = &DoNothingHandler{}
+
+	handlers["Success"] = &DoNothingHandler{}
+	handlers["Failure"] = &DoNothingHandler{}
+
+	handlers["FullBuddyList"] = &DoNothingHandler{}
+	handlers["ShortBuddyList"] = &DoNothingHandler{}
+	handlers["BuddyListDiff"] = &DoNothingHandler{}
+
+	handlers["LicenseUsage"] = &DoNothingHandler{}
+	handlers["Progress"] = &DoNothingHandler{}
+
 	client := RegistrationInfo{}
-	handlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: commandToSocket}
-	handlers["Register"] = &RegisterHandler{out: commandToSocket}
-	handlers["Subscribe"] = &DoNothingHandler{}
+	responseHandlers := make(map[string]Handler)
+	responseHandlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: commandToSocket}
+	responseHandlers["Register"] = &RegisterHandler{out: commandToSocket}
+	responseHandlers["Subscribe"] = &DoNothingHandler{}
+	handlers["Response"] = &CommonTagHandler{handlers: responseHandlers}
+
+	requestHandlers := make(map[string]Handler)
+	requestHandlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: commandToSocket}
+	requestHandlers["Echo"] = &EchoHandler{out: commandToSocket}
+	handlers["Request"] = &CommonTagHandler{handlers: requestHandlers}
 
 	startSender(conn, commandToSocket)
 	startReceiver(conn, handlers)

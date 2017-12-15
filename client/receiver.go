@@ -53,14 +53,14 @@ func startReceiver(conn net.Conn, handlers map[string]Handler) {
 	go func() {
 		for {
 			event := <-strToNode
-			commandName := event.Attributes["name"]
+			rootTag := event.XMLName.Local
 
-			handler, exist := handlers[commandName]
+			handler, exist := handlers[rootTag]
 			if exist {
-				handler.Unmarshal(event)
-				nodeToHanlderChannel <- handler
+				h := handler.Unmarshal(event)
+				nodeToHanlderChannel <- h
 			} else {
-				log.Printf("Unknown command: %s\n", commandName)
+				log.Printf("Unknown handler: %s\n", rootTag)
 			}
 		}
 	}()
