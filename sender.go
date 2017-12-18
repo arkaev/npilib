@@ -6,13 +6,13 @@ import (
 )
 
 //Sender : marshal node and send bytes to socket
-func startSender(conn *Conn, commandToSocket <-chan NCCCommand) {
+func startSender(nc *Conn, commandToSocket <-chan NCCCommand) {
 	dataToSocket := make(chan []byte)
 
 	go func() {
 		for {
 			data := <-dataToSocket
-			conn.Send(data)
+			nc.Send(data)
 			log.Println("Sent:\n" + string(data))
 		}
 	}()

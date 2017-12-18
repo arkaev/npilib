@@ -65,7 +65,7 @@ type MsgHandler func(msg *Msg)
 //Connect create connection by address and keyFile
 func Connect(url string, options Options) (*Conn, error) {
 
-	conn := &Conn{}
+	nc := &Conn{}
 
 	auth, err := getAuthData(options.KeyFile)
 	if err != nil {
@@ -73,10 +73,10 @@ func Connect(url string, options Options) (*Conn, error) {
 		return nil, err
 	}
 
-	conn.digest = auth.MD5
-	log.Printf("Digest: %s\n", conn.digest)
+	nc.digest = auth.MD5
+	log.Printf("Digest: %s\n", nc.digest)
 
-	conn.conn, err = net.Dial("tcp", url)
+	nc.conn, err = net.Dial("tcp", url)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func Connect(url string, options Options) (*Conn, error) {
 
 	handlers["Response"] = &CommonTagHandler{
 		handlers: map[string]Handler{
-			"RegisterPeer": &RegisterPeerHandler{config: conn, out: commandToSocket},
+			"RegisterPeer": &RegisterPeerHandler{config: nc, out: commandToSocket},
 			"Register":     &RegisterHandler{out: commandToSocket},
 			"Subscribe":    &DoNothingHandler{},
 		}}
@@ -116,12 +116,12 @@ func Connect(url string, options Options) (*Conn, error) {
 			"Echo":         &EchoHandler{out: commandToSocket},
 		}}
 
-	startSender(conn, commandToSocket)
-	startReceiver(conn, handlers)
+	startSender(nc, commandToSocket)
+	startReceiver(nc, handlers)
 
 	commandToSocket <- RegisterPeerCommand(auth)
 
-	return conn, nil
+	return nc, nil
 }
 
 // subscribe is the internal subscribe function that indicates interest in a subject.

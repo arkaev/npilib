@@ -9,13 +9,13 @@ import (
 )
 
 //Receiver for commands from socket
-func startReceiver(conn *Conn, handlers map[string]Handler) {
+func startReceiver(nc *Conn, handlers map[string]Handler) {
 	socketToStrCommand := make(chan string)
 	strToNode := make(chan *Node)
 	nodeToHanlderChannel := make(chan Handler)
 
 	go func() {
-		bufReader := bufio.NewReader(conn.conn)
+		bufReader := bufio.NewReader(nc.conn)
 		for {
 			msg, err := bufReader.ReadString(delimeter)
 			if err != nil {
