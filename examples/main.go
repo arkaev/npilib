@@ -4,12 +4,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/arkaev/npilib/client"
+	"github.com/arkaev/npilib"
 )
 
 const address string = "docker72:3242"
 const name string = "naucrm"
-const keyFile string = "config/key.service." + name + ".xml"
+const keyFile string = "../config/key.service." + name + ".xml"
 
 func main() {
 	// f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -23,12 +23,12 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.Println("Started")
 
-	conn, err := client.Connect(address, keyFile)
+	conn, err := npilib.Connect(address, keyFile)
 	if err != nil {
 		log.Println(err)
 	}
 	defer conn.Close()
-	time.Sleep(time.Millisecond * 5000)
+	time.Sleep(time.Millisecond * 1000)
 
 	log.Println("Exit")
 }

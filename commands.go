@@ -1,4 +1,4 @@
-package client
+package npilib
 
 //NCCCommand base interface for response to socket
 type NCCCommand interface {
