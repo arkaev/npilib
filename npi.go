@@ -103,16 +103,18 @@ func Connect(url string, options Options) (*Conn, error) {
 	handlers["LicenseUsage"] = &DoNothingHandler{}
 	handlers["Progress"] = &DoNothingHandler{}
 
-	responseHandlers := make(map[string]Handler)
-	responseHandlers["RegisterPeer"] = &RegisterPeerHandler{config: conn, out: commandToSocket}
-	responseHandlers["Register"] = &RegisterHandler{out: commandToSocket}
-	responseHandlers["Subscribe"] = &DoNothingHandler{}
-	handlers["Response"] = &CommonTagHandler{handlers: responseHandlers}
+	handlers["Response"] = &CommonTagHandler{
+		handlers: map[string]Handler{
+			"RegisterPeer": &RegisterPeerHandler{config: conn, out: commandToSocket},
+			"Register":     &RegisterHandler{out: commandToSocket},
+			"Subscribe":    &DoNothingHandler{},
+		}}
 
-	requestHandlers := make(map[string]Handler)
-	requestHandlers["Authenticate"] = &AuthenificateHandler{digest: auth.MD5, out: commandToSocket}
-	requestHandlers["Echo"] = &EchoHandler{out: commandToSocket}
-	handlers["Request"] = &CommonTagHandler{handlers: requestHandlers}
+	handlers["Request"] = &CommonTagHandler{
+		handlers: map[string]Handler{
+			"Authenticate": &AuthenificateHandler{digest: auth.MD5, out: commandToSocket},
+			"Echo":         &EchoHandler{out: commandToSocket},
+		}}
 
 	startSender(conn, commandToSocket)
 	startReceiver(conn, handlers)
