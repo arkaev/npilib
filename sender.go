@@ -6,7 +6,7 @@ import (
 )
 
 //Sender : marshal node and send bytes to socket
-func startSender(nc *Conn, commandToSocket <-chan NCCCommand) {
+func startSender(nc *Conn) {
 	dataToSocket := make(chan []byte)
 
 	go func() {
@@ -19,7 +19,7 @@ func startSender(nc *Conn, commandToSocket <-chan NCCCommand) {
 
 	go func() {
 		for {
-			obj := <-commandToSocket
+			obj := <-nc.commandToSocket
 			data, err := xml.MarshalIndent(obj, "", "    ")
 			if err != nil {
 				log.Printf("error: %v\n", err)

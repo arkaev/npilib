@@ -25,6 +25,9 @@ type Conn struct {
 	protocolVersion int
 	ssid            int64
 	subs            map[int64]*Subscription
+
+	handlers        map[string]Handler
+	commandToSocket chan NCCCommand
 }
 
 // Options can be used to create a customized connection.
@@ -83,9 +86,9 @@ func Connect(url string, options Options) (*Conn, error) {
 
 	log.Println("Connected to socket")
 
-	commandToSocket := make(chan NCCCommand)
+	nc.commandToSocket = make(chan NCCCommand)
 
-	handlers := map[string]Handler{
+	nc.handlers = map[string]Handler{
 		"Event":   &DoNothingHandler{},
 		"Command": &DoNothingHandler{},
 
@@ -105,22 +108,22 @@ func Connect(url string, options Options) (*Conn, error) {
 
 		"Response": &CommonTagHandler{
 			handlers: map[string]Handler{
-				"RegisterPeer": &RegisterPeerHandler{config: nc, out: commandToSocket},
-				"Register":     &RegisterHandler{out: commandToSocket},
+				"RegisterPeer": &RegisterPeerHandler{conn: nc},
+				"Register":     &RegisterHandler{conn: nc},
 				"Subscribe":    &DoNothingHandler{},
 			}},
 
 		"Request": &CommonTagHandler{
 			handlers: map[string]Handler{
-				"Authenticate": &AuthenificateHandler{digest: auth.MD5, out: commandToSocket},
-				"Echo":         &EchoHandler{out: commandToSocket},
+				"Authenticate": &AuthenificateHandler{conn: nc},
+				"Echo":         &EchoHandler{conn: nc},
 			}},
 	}
 
-	startSender(nc, commandToSocket)
-	startReceiver(nc, handlers)
+	startSender(nc)
+	startReceiver(nc)
 
-	commandToSocket <- RegisterPeerCommand(auth)
+	nc.commandToSocket <- RegisterPeerCommand(auth)
 
 	return nc, nil
 }

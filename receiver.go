@@ -9,7 +9,7 @@ import (
 )
 
 //Receiver for commands from socket
-func startReceiver(nc *Conn, handlers map[string]Handler) {
+func startReceiver(nc *Conn) {
 	socketToStrCommand := make(chan string)
 	strToNode := make(chan *Node)
 	nodeToHanlderChannel := make(chan Handler)
@@ -54,7 +54,7 @@ func startReceiver(nc *Conn, handlers map[string]Handler) {
 			event := <-strToNode
 			rootTag := event.XMLName.Local
 
-			handler, exist := handlers[rootTag]
+			handler, exist := nc.handlers[rootTag]
 			if exist {
 				h := handler.Unmarshal(event)
 				nodeToHanlderChannel <- h

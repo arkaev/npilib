@@ -43,9 +43,8 @@ func (h *CommonTagHandler) Handle() {
 //AuthenificateHandler for "Authenificate" command
 type AuthenificateHandler struct {
 	Handler
-	digest string
+	conn *Conn
 
-	out        chan<- NCCCommand
 	algoritm   string
 	authScheme string
 	method     string
@@ -70,7 +69,7 @@ func (h *AuthenificateHandler) Unmarshal(node *Node) Handler {
 
 //Handle "Authenificate" command
 func (h *AuthenificateHandler) Handle() {
-	value := calculateMD5(h.digest, h.nonce, h.method, h.uri)
+	value := calculateMD5(h.conn.digest, h.nonce, h.method, h.uri)
 	value = strings.ToLower(value)
 
 	type Param struct {
@@ -88,7 +87,7 @@ func (h *AuthenificateHandler) Handle() {
 		Response *Response
 	}
 
-	h.out <- &NCCN{
+	h.conn.commandToSocket <- &NCCN{
 		Response: &Response{
 			Name:  "Authenticate",
 			Param: &Param{Name: "response", Value: value}}}
@@ -97,8 +96,7 @@ func (h *AuthenificateHandler) Handle() {
 //RegisterPeerHandler for "RegisterPeer" command
 type RegisterPeerHandler struct {
 	Handler
-	config          *Conn
-	out             chan<- NCCCommand
+	conn            *Conn
 	AllowEncoding   string
 	Domain          string
 	Node            string
@@ -121,11 +119,11 @@ func (h *RegisterPeerHandler) Unmarshal(node *Node) Handler {
 
 //Handle "RegisterPeer" command
 func (h *RegisterPeerHandler) Handle() {
-	h.config.allowEncoding = h.AllowEncoding
-	h.config.domain = h.Domain
-	h.config.node = h.Node
-	h.config.peer = h.Peer
-	h.config.protocolVersion = h.ProtocolVersion
+	h.conn.allowEncoding = h.AllowEncoding
+	h.conn.domain = h.Domain
+	h.conn.node = h.Node
+	h.conn.peer = h.Peer
+	h.conn.protocolVersion = h.ProtocolVersion
 
 	type Params struct {
 		ProtocolVersion int `xml:"protocol_version,attr"`
@@ -141,7 +139,7 @@ func (h *RegisterPeerHandler) Handle() {
 		Request *Request
 	}
 
-	h.out <- &NCC{
+	h.conn.commandToSocket <- &NCC{
 		Request: &Request{
 			Name:   "Register",
 			Params: &Params{ProtocolVersion: 600}}}
@@ -150,7 +148,7 @@ func (h *RegisterPeerHandler) Handle() {
 //EchoHandler for "Echo" command
 type EchoHandler struct {
 	Handler
-	out chan<- NCCCommand
+	conn *Conn
 }
 
 //Unmarshal "Echo" command
@@ -171,13 +169,13 @@ func (h *EchoHandler) Handle() {
 
 	nccn := &NCCN{Response: &Response{Name: "Echo"}}
 
-	h.out <- nccn
+	h.conn.commandToSocket <- nccn
 }
 
 //RegisterHandler for "Register" command
 type RegisterHandler struct {
 	Handler
-	out chan<- NCCCommand
+	conn *Conn
 }
 
 //Unmarshal "Register" command
@@ -189,8 +187,8 @@ func (h *RegisterHandler) Unmarshal(node *Node) Handler {
 func (h *RegisterHandler) Handle() {
 	log.Println("Successful registration")
 
-	h.out <- SubscribeCommand("callslist")
-	h.out <- SubscribeCommand("buddylist")
+	h.conn.commandToSocket <- SubscribeCommand("callslist")
+	h.conn.commandToSocket <- SubscribeCommand("buddylist")
 }
 
 //DoNothingHandler bulk handler
