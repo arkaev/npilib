@@ -84,37 +84,38 @@ func Connect(url string, options Options) (*Conn, error) {
 	log.Println("Connected to socket")
 
 	commandToSocket := make(chan NCCCommand)
-	handlers := make(map[string]Handler)
 
-	handlers["Event"] = &DoNothingHandler{}
-	handlers["Command"] = &DoNothingHandler{}
+	handlers := map[string]Handler{
+		"Event":   &DoNothingHandler{},
+		"Command": &DoNothingHandler{},
 
-	handlers["DialPlan"] = &DoNothingHandler{}
-	handlers["DialplanUploadResult"] = &DoNothingHandler{}
+		"DialPlan":             &DoNothingHandler{},
+		"DialplanUploadResult": &DoNothingHandler{},
 
-	handlers["Success"] = &DoNothingHandler{}
-	handlers["Failure"] = &DoNothingHandler{}
+		"Success": &DoNothingHandler{},
+		"Failure": &DoNothingHandler{},
 
-	handlers["FullCallsList"] = &FullCallsListHandler{}
-	handlers["FullBuddyList"] = &FullBuddyListHandler{}
-	handlers["ShortBuddyList"] = &DoNothingHandler{}
-	handlers["BuddyListDiff"] = &DoNothingHandler{}
+		"FullCallsList":  &FullCallsListHandler{},
+		"FullBuddyList":  &FullBuddyListHandler{},
+		"ShortBuddyList": &DoNothingHandler{},
+		"BuddyListDiff":  &DoNothingHandler{},
 
-	handlers["LicenseUsage"] = &DoNothingHandler{}
-	handlers["Progress"] = &DoNothingHandler{}
+		"LicenseUsage": &DoNothingHandler{},
+		"Progress":     &DoNothingHandler{},
 
-	handlers["Response"] = &CommonTagHandler{
-		handlers: map[string]Handler{
-			"RegisterPeer": &RegisterPeerHandler{config: nc, out: commandToSocket},
-			"Register":     &RegisterHandler{out: commandToSocket},
-			"Subscribe":    &DoNothingHandler{},
-		}}
+		"Response": &CommonTagHandler{
+			handlers: map[string]Handler{
+				"RegisterPeer": &RegisterPeerHandler{config: nc, out: commandToSocket},
+				"Register":     &RegisterHandler{out: commandToSocket},
+				"Subscribe":    &DoNothingHandler{},
+			}},
 
-	handlers["Request"] = &CommonTagHandler{
-		handlers: map[string]Handler{
-			"Authenticate": &AuthenificateHandler{digest: auth.MD5, out: commandToSocket},
-			"Echo":         &EchoHandler{out: commandToSocket},
-		}}
+		"Request": &CommonTagHandler{
+			handlers: map[string]Handler{
+				"Authenticate": &AuthenificateHandler{digest: auth.MD5, out: commandToSocket},
+				"Echo":         &EchoHandler{out: commandToSocket},
+			}},
+	}
 
 	startSender(nc, commandToSocket)
 	startReceiver(nc, handlers)
