@@ -3,18 +3,16 @@ package npilib
 import (
 	"encoding/xml"
 	"log"
-	"net"
 )
 
 //Sender : marshal node and send bytes to socket
-func startSender(conn net.Conn, commandToSocket <-chan NCCCommand) {
+func startSender(conn *Conn, commandToSocket <-chan NCCCommand) {
 	dataToSocket := make(chan []byte)
 
 	go func() {
 		for {
 			data := <-dataToSocket
-			conn.Write(data)
-			conn.Write([]byte{delimeter})
+			conn.Send(data)
 			log.Println("Sent:\n" + string(data))
 		}
 	}()

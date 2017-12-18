@@ -3,31 +3,47 @@ package npilib
 import (
 	"log"
 	"net"
+	"net/url"
 )
 
-const delimeter byte = 0
+const (
+	// delimeter for messages
+	delimeter byte = 0
+)
 
-//RegistrationInfo contains bus registration info
-type RegistrationInfo struct {
-	AllowEncoding   string
-	Domain          string
-	Node            string
-	Peer            string
-	ProtocolVersion int
+// A Conn represents a bare connection to a server.
+type Conn struct {
+	url             *url.URL
+	conn            net.Conn
+	digest          string
+	allowEncoding   string
+	domain          string
+	node            string
+	peer            string
+	protocolVersion int
+}
+
+// Options can be used to create a customized connection.
+type Options struct {
+	//KeyFile is url to key-file with authentification digest
+	KeyFile string
 }
 
 //Connect create connection by address and keyFile
-func Connect(address string, keyFile string) (net.Conn, error) {
+func Connect(url string, options Options) (*Conn, error) {
 
-	auth, err := getAuthData(keyFile)
+	conn := &Conn{}
+
+	auth, err := getAuthData(options.KeyFile)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	log.Println("Digest: " + auth.MD5)
+	conn.digest = auth.MD5
+	log.Printf("Digest: %s\n", conn.digest)
 
-	conn, err := net.Dial("tcp", address)
+	conn.conn, err = net.Dial("tcp", url)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +70,8 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	handlers["LicenseUsage"] = &DoNothingHandler{}
 	handlers["Progress"] = &DoNothingHandler{}
 
-	client := RegistrationInfo{}
 	responseHandlers := make(map[string]Handler)
-	responseHandlers["RegisterPeer"] = &RegisterPeerHandler{config: &client, out: commandToSocket}
+	responseHandlers["RegisterPeer"] = &RegisterPeerHandler{config: conn, out: commandToSocket}
 	responseHandlers["Register"] = &RegisterHandler{out: commandToSocket}
 	responseHandlers["Subscribe"] = &DoNothingHandler{}
 	handlers["Response"] = &CommonTagHandler{handlers: responseHandlers}
@@ -72,4 +87,15 @@ func Connect(address string, keyFile string) (net.Conn, error) {
 	commandToSocket <- RegisterPeerCommand(auth)
 
 	return conn, nil
+}
+
+// Send will write data to socket
+func (c *Conn) Send(cmd []byte) {
+	c.conn.Write(cmd)
+	c.conn.Write([]byte{delimeter})
+}
+
+// Close will close the connection
+func (c *Conn) Close() {
+	c.conn.Close()
 }

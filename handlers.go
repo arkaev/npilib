@@ -97,7 +97,7 @@ func (h *AuthenificateHandler) Handle() {
 //RegisterPeerHandler for "RegisterPeer" command
 type RegisterPeerHandler struct {
 	Handler
-	config          *RegistrationInfo
+	config          *Conn
 	out             chan<- NCCCommand
 	AllowEncoding   string
 	Domain          string
@@ -121,11 +121,11 @@ func (h *RegisterPeerHandler) Unmarshal(node *Node) Handler {
 
 //Handle "RegisterPeer" command
 func (h *RegisterPeerHandler) Handle() {
-	h.config.AllowEncoding = h.AllowEncoding
-	h.config.Domain = h.Domain
-	h.config.Node = h.Node
-	h.config.Peer = h.Peer
-	h.config.ProtocolVersion = h.ProtocolVersion
+	h.config.allowEncoding = h.AllowEncoding
+	h.config.domain = h.Domain
+	h.config.node = h.Node
+	h.config.peer = h.Peer
+	h.config.protocolVersion = h.ProtocolVersion
 
 	type Params struct {
 		ProtocolVersion int `xml:"protocol_version,attr"`

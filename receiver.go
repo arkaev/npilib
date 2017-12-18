@@ -5,18 +5,17 @@ import (
 	"encoding/xml"
 	"io"
 	"log"
-	"net"
 	"time"
 )
 
 //Receiver for commands from socket
-func startReceiver(conn net.Conn, handlers map[string]Handler) {
+func startReceiver(conn *Conn, handlers map[string]Handler) {
 	socketToStrCommand := make(chan string)
 	strToNode := make(chan *Node)
 	nodeToHanlderChannel := make(chan Handler)
 
 	go func() {
-		bufReader := bufio.NewReader(conn)
+		bufReader := bufio.NewReader(conn.conn)
 		for {
 			msg, err := bufReader.ReadString(delimeter)
 			if err != nil {
