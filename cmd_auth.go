@@ -65,19 +65,13 @@ func (h *AuthenificateRqParser) Unmarshal(data []byte) NCCCommand {
 type AuthenificateHandler struct {
 	Handler
 	conn *Conn
-
-	algorithm  string
-	authScheme string
-	method     string
-	nonce      string
-	realm      string
-	uri        string
-	username   string
 }
 
 //Handle "Authenificate" command
 func (h *AuthenificateHandler) Handle(cmd NCCCommand) {
-	value := calculateMD5(h.conn.digest, h.nonce, h.method, h.uri)
+	auth := cmd.(*AuthenificateRq)
+
+	value := calculateMD5(h.conn.digest, auth.Nonce, auth.Method, auth.URI)
 	value = strings.ToLower(value)
 
 	type Param struct {

@@ -45,8 +45,9 @@ func startReceiver(nc *Conn) {
 			}
 			parser, exist := nc.parsers[msg.Command]
 			if exist {
-				h := parser.Unmarshal(msg.Data)
-				msg.Parsed = h
+				if parser != nil {
+					msg.Parsed = parser.Unmarshal(msg.Data)
+				}
 				msg.Data = nil
 				msgToHanlderChannel <- msg
 			} else {

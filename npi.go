@@ -90,9 +90,15 @@ func Connect(url string, options Options) (*Conn, error) {
 	nc.commandToSocket = make(chan NCCCommand)
 
 	nc.parsers = map[string]Parser{
-		"Authenticate":  &AuthenificateRqParser{},
+		"FullCallsList": nil,
 		"FullBuddyList": &FullBuddyListParser{},
-		"RegisterPeer":  &RegisterPeerRsParser{},
+
+		"RegisterPeer": &RegisterPeerRsParser{},
+		"Register":     nil,
+		"Subscribe":    nil,
+
+		"Echo":         nil,
+		"Authenticate": &AuthenificateRqParser{},
 	}
 
 	nc.handlers = map[string]Handler{
@@ -105,7 +111,7 @@ func Connect(url string, options Options) (*Conn, error) {
 		"Success": &DoNothingHandler{},
 		"Failure": &DoNothingHandler{},
 
-		// "FullCallsList":  &FullCallsListHandler{},
+		"FullCallsList":  &DoNothingHandler{},
 		"FullBuddyList":  &FullBuddyListHandler{},
 		"ShortBuddyList": &DoNothingHandler{},
 		"BuddyListDiff":  &DoNothingHandler{},
