@@ -12,8 +12,7 @@ import (
 //Receiver for commands from socket
 func startReceiver(nc *Conn) {
 	socketToDataCommand := make(chan []byte)
-	dataToNode := make(chan *Node)
-	nodeToHanlderChannel := make(chan Handler)
+	msgToHanlderChannel := make(chan *CommandWrapper)
 
 	go func() {
 		bufReader := bufio.NewReader(nc.conn)
@@ -37,41 +36,35 @@ func startReceiver(nc *Conn) {
 	go func() {
 		for {
 			cmdData := <-socketToDataCommand
-			cmd := recognizeMessage(cmdData)
+			msg := recognizeMessage(cmdData)
 
-			log.Printf("Recognized command: %s\n", cmd.Command)
-
-			root := Node{}
-			err := xml.Unmarshal(cmdData, &root)
-			if err != nil {
-				log.Printf("error parsing command: %v\n", err)
+			_, exist := nc.handlers[msg.Command]
+			if !exist {
+				log.Printf("No handler found. Skipped command: %s\n", msg.Command)
+				break
 			}
-
-			for _, event := range root.Nodes {
-				dataToNode <- event
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			event := <-dataToNode
-			rootTag := event.XMLName.Local
-
-			handler, exist := nc.handlers[rootTag]
+			parser, exist := nc.parsers[msg.Command]
 			if exist {
-				h := handler.Unmarshal(event)
-				nodeToHanlderChannel <- h
+				h := parser.Unmarshal(msg.Data)
+				msg.Parsed = h
+				msg.Data = nil
+				msgToHanlderChannel <- msg
 			} else {
-				log.Printf("Unknown handler: %s\n", rootTag)
+				log.Printf("Parser not found for command: %s\n", msg.Command)
 			}
 		}
 	}()
 
 	go func() {
 		for {
-			handler := <-nodeToHanlderChannel
-			handler.Handle()
+			msg := <-msgToHanlderChannel
+
+			handler, exist := nc.handlers[msg.Command]
+			if exist {
+				handler.Handle(msg.Parsed)
+			} else {
+				log.Printf("Unknown handler: %s\n", msg.Command)
+			}
 		}
 	}()
 }
@@ -83,6 +76,7 @@ type CommandWrapper struct {
 	From    string
 	To      string
 	Data    []byte
+	Parsed  NCCCommand
 }
 
 func recognizeMessage(data []byte) *CommandWrapper {

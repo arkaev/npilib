@@ -8,13 +8,8 @@ type RegisterHandler struct {
 	conn *Conn
 }
 
-//Unmarshal "Register" command
-func (h *RegisterHandler) Unmarshal(node *Node) Handler {
-	return h
-}
-
 //Handle "Register" command
-func (h *RegisterHandler) Handle() {
+func (h *RegisterHandler) Handle(cmd NCCCommand) {
 	log.Println("Successful registration")
 
 	h.conn.commandToSocket <- SubscribeCommand("callslist")

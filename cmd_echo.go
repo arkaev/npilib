@@ -6,13 +6,8 @@ type EchoHandler struct {
 	conn *Conn
 }
 
-//Unmarshal "Echo" command
-func (h *EchoHandler) Unmarshal(node *Node) Handler {
-	return h
-}
-
 //Handle "Echo" command
-func (h *EchoHandler) Handle() {
+func (h *EchoHandler) Handle(cmd NCCCommand) {
 	type Response struct {
 		Name string `xml:"name,attr"`
 	}

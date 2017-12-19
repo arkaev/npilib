@@ -37,8 +37,8 @@ func TestFullBaddyListParse(t *testing.T) {
 		</FullBuddyList>
 	</NCC>`)
 
-	handler := &FullBuddyListHandler{}
-	rs := handler.Parse([]byte(cmd))
+	handler := &FullBuddyListParser{}
+	rs := handler.Unmarshal([]byte(cmd)).(*FullBuddyListRs)
 
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Login, "ivr")
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Number, "0001")

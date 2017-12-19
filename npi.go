@@ -26,6 +26,7 @@ type Conn struct {
 	ssid            int64
 	subs            map[int64]*Subscription
 
+	parsers         map[string]Parser
 	handlers        map[string]Handler
 	commandToSocket chan NCCCommand
 }
@@ -88,6 +89,12 @@ func Connect(url string, options Options) (*Conn, error) {
 
 	nc.commandToSocket = make(chan NCCCommand)
 
+	nc.parsers = map[string]Parser{
+		"Authenticate":  &AuthenificateRqParser{},
+		"FullBuddyList": &FullBuddyListParser{},
+		"RegisterPeer":  &RegisterPeerRsParser{},
+	}
+
 	nc.handlers = map[string]Handler{
 		"Event":   &DoNothingHandler{},
 		"Command": &DoNothingHandler{},
@@ -98,7 +105,7 @@ func Connect(url string, options Options) (*Conn, error) {
 		"Success": &DoNothingHandler{},
 		"Failure": &DoNothingHandler{},
 
-		"FullCallsList":  &FullCallsListHandler{},
+		// "FullCallsList":  &FullCallsListHandler{},
 		"FullBuddyList":  &FullBuddyListHandler{},
 		"ShortBuddyList": &DoNothingHandler{},
 		"BuddyListDiff":  &DoNothingHandler{},
@@ -106,18 +113,12 @@ func Connect(url string, options Options) (*Conn, error) {
 		"LicenseUsage": &DoNothingHandler{},
 		"Progress":     &DoNothingHandler{},
 
-		"Response": &CommonTagHandler{
-			handlers: map[string]Handler{
-				"RegisterPeer": &RegisterPeerHandler{conn: nc},
-				"Register":     &RegisterHandler{conn: nc},
-				"Subscribe":    &DoNothingHandler{},
-			}},
+		"RegisterPeer": &RegisterPeerHandler{conn: nc},
+		"Register":     &RegisterHandler{conn: nc},
+		"Subscribe":    &DoNothingHandler{},
 
-		"Request": &CommonTagHandler{
-			handlers: map[string]Handler{
-				"Authenticate": &AuthenificateHandler{conn: nc},
-				"Echo":         &EchoHandler{conn: nc},
-			}},
+		"Authenticate": &AuthenificateHandler{conn: nc},
+		"Echo":         &EchoHandler{conn: nc},
 	}
 
 	startSender(nc)

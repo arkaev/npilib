@@ -10,6 +10,7 @@ import (
 
 // AuthenificateRq structure contains "Authenificate" request data
 type AuthenificateRq struct {
+	NCCCommand
 	Algorithm  string
 	AuthScheme string
 	Method     string
@@ -19,35 +20,12 @@ type AuthenificateRq struct {
 	Username   string
 }
 
-//AuthenificateHandler for "Authenificate" command
-type AuthenificateHandler struct {
-	Handler
-	conn *Conn
-
-	algorithm  string
-	authScheme string
-	method     string
-	nonce      string
-	realm      string
-	uri        string
-	username   string
+type AuthenificateRqParser struct {
+	Parser
 }
 
 //Unmarshal "Authenificate" command
-func (h *AuthenificateHandler) Unmarshal(node *Node) Handler {
-	h.algorithm = node.Nodes[0].Attributes["algoritm"]
-	h.authScheme = node.Nodes[0].Attributes["auth_scheme"]
-	h.method = node.Nodes[0].Attributes["method"]
-	h.nonce = node.Nodes[0].Attributes["nonce"]
-	h.realm = node.Nodes[0].Attributes["realm"]
-	h.uri = node.Nodes[0].Attributes["uri"]
-	h.username = node.Nodes[0].Attributes["username"]
-
-	return h
-}
-
-//Parse "Authenificate" command
-func (h *AuthenificateHandler) Parse(data []byte) *AuthenificateRq {
+func (h *AuthenificateRqParser) Unmarshal(data []byte) NCCCommand {
 	type Params struct {
 		Algorithm  string `xml:"algorithm,attr"`
 		AuthScheme string `xml:"auth_scheme,attr"`
@@ -83,8 +61,22 @@ func (h *AuthenificateHandler) Parse(data []byte) *AuthenificateRq {
 	}
 }
 
+//AuthenificateHandler for "Authenificate" command
+type AuthenificateHandler struct {
+	Handler
+	conn *Conn
+
+	algorithm  string
+	authScheme string
+	method     string
+	nonce      string
+	realm      string
+	uri        string
+	username   string
+}
+
 //Handle "Authenificate" command
-func (h *AuthenificateHandler) Handle() {
+func (h *AuthenificateHandler) Handle(cmd NCCCommand) {
 	value := calculateMD5(h.conn.digest, h.nonce, h.method, h.uri)
 	value = strings.ToLower(value)
 
