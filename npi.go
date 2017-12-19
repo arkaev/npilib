@@ -95,12 +95,12 @@ func Connect(url string, options Options) (*Conn, error) {
 		"FullCallsList": nil,
 		"FullBuddyList": &FullBuddyListParser{},
 
-		"RegisterPeer": &RegisterPeerRsParser{},
-		"Register":     nil,
-		"Subscribe":    nil,
+		"Response:RegisterPeer": &RegisterPeerRsParser{},
+		"Response:Register":     nil,
+		"Response:Subscribe":    nil,
 
-		"Echo":         nil,
-		"Authenticate": &AuthenificateRqParser{},
+		"Request:Echo":         nil,
+		"Request:Authenticate": &AuthenificateRqParser{},
 	}
 
 	nc.handlers = map[string]Handler{
@@ -121,12 +121,12 @@ func Connect(url string, options Options) (*Conn, error) {
 		"LicenseUsage": &DoNothingHandler{},
 		"Progress":     &DoNothingHandler{},
 
-		"RegisterPeer": &RegisterPeerHandler{conn: nc},
-		"Register":     &RegisterHandler{conn: nc},
-		"Subscribe":    &DoNothingHandler{},
+		"Response:RegisterPeer": &RegisterPeerHandler{conn: nc},
+		"Response:Register":     &RegisterHandler{conn: nc},
+		"Response:Subscribe":    &DoNothingHandler{},
 
-		"Authenticate": &AuthenificateHandler{conn: nc},
-		"Echo":         &EchoHandler{conn: nc},
+		"Request:Authenticate": &AuthenificateHandler{conn: nc},
+		"Request:Echo":         &EchoHandler{conn: nc},
 	}
 
 	startSender(nc)

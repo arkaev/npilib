@@ -116,7 +116,7 @@ func recognizeMessage(data []byte) *CommandWrapper {
 				if se.Name.Local == "Request" || se.Name.Local == "Response" {
 					for _, attr := range se.Attr {
 						if attr.Name.Local == "name" {
-							cmd.Command = attr.Value
+							cmd.Command = se.Name.Local + ":" + attr.Value
 							return cmd
 						}
 					}
