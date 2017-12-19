@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// AuthenificateRq structure contains "Authenificate" request data
 type AuthenificateRq struct {
 	Algorithm  string
 	AuthScheme string

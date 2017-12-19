@@ -90,7 +90,7 @@ func recognizeMessage(data []byte) *CommandWrapper {
 	decoder := xml.NewDecoder(dataReader)
 
 	cmd := &CommandWrapper{Data: data}
-
+	level := 0
 	for {
 		t, _ := decoder.Token()
 		if t == nil {
@@ -98,30 +98,41 @@ func recognizeMessage(data []byte) *CommandWrapper {
 		}
 		switch se := t.(type) {
 		case xml.StartElement:
-			if se.Name.Local == "NCC" || se.Name.Local == "NCCN" {
-				cmd.NCC = se.Name.Local
-				for _, attr := range se.Attr {
-					if attr.Name.Local == "from" {
-						cmd.From = attr.Value
-					} else if attr.Name.Local == "to" {
-						cmd.To = attr.Value
+			level++
+			if level == 1 {
+				if se.Name.Local == "NCC" || se.Name.Local == "NCCN" {
+					cmd.NCC = se.Name.Local
+					for _, attr := range se.Attr {
+						if attr.Name.Local == "from" {
+							cmd.From = attr.Value
+						} else if attr.Name.Local == "to" {
+							cmd.To = attr.Value
+						}
 					}
+					break
+				} else {
+					return nil
 				}
-				break
-			} else if se.Name.Local == "Request" || se.Name.Local == "Response" {
-				for _, attr := range se.Attr {
-					if attr.Name.Local == "name" {
-						cmd.Command = attr.Value
-						return cmd
+			}
+
+			if level == 2 {
+				if se.Name.Local == "Request" || se.Name.Local == "Response" {
+					for _, attr := range se.Attr {
+						if attr.Name.Local == "name" {
+							cmd.Command = attr.Value
+							return cmd
+						}
 					}
+
+					// if command has no name
+					return nil
 				}
 
-				// if command has no name
-				return nil
-			} else {
 				cmd.Command = se.Name.Local
 				return cmd
 			}
+
+			return nil
 		}
 	}
 
