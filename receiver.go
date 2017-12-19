@@ -2,6 +2,7 @@ package npilib
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/xml"
 	"io"
 	"log"
@@ -27,7 +28,7 @@ func startReceiver(nc *Conn) {
 					break
 				}
 			} else {
-				log.Printf("Received:%s\n", cmdData)
+				log.Printf("Received:\n%s\n", cmdData)
 				socketToDataCommand <- cmdData
 			}
 		}
@@ -36,6 +37,9 @@ func startReceiver(nc *Conn) {
 	go func() {
 		for {
 			cmdData := <-socketToDataCommand
+			cmd := recognizeMessage(cmdData)
+
+			log.Printf("Recognized command: %s\n", cmd.Command)
 
 			root := Node{}
 			err := xml.Unmarshal(cmdData, &root)
@@ -70,4 +74,56 @@ func startReceiver(nc *Conn) {
 			handler.Handle()
 		}
 	}()
+}
+
+// CommandWrapper contains base information about command
+type CommandWrapper struct {
+	NCC     string
+	Command string
+	From    string
+	To      string
+	Data    []byte
+}
+
+func recognizeMessage(data []byte) *CommandWrapper {
+	dataReader := bytes.NewReader(data)
+	decoder := xml.NewDecoder(dataReader)
+
+	cmd := &CommandWrapper{Data: data}
+
+	for {
+		t, _ := decoder.Token()
+		if t == nil {
+			break
+		}
+		switch se := t.(type) {
+		case xml.StartElement:
+			if se.Name.Local == "NCC" || se.Name.Local == "NCCN" {
+				cmd.NCC = se.Name.Local
+				for _, attr := range se.Attr {
+					if attr.Name.Local == "from" {
+						cmd.From = attr.Value
+					} else if attr.Name.Local == "to" {
+						cmd.To = attr.Value
+					}
+				}
+				break
+			} else if se.Name.Local == "Request" || se.Name.Local == "Response" {
+				for _, attr := range se.Attr {
+					if attr.Name.Local == "name" {
+						cmd.Command = attr.Value
+						return cmd
+					}
+				}
+
+				// if command has no name
+				return nil
+			} else {
+				cmd.Command = se.Name.Local
+				return cmd
+			}
+		}
+	}
+
+	return cmd
 }
