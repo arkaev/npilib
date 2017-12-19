@@ -1,6 +1,10 @@
 package npilib
 
-import "log"
+import (
+	"log"
+
+	c "github.com/arkaev/npilib/commands"
+)
 
 //RegisterHandler for "Register" command
 type RegisterHandler struct {
@@ -9,7 +13,7 @@ type RegisterHandler struct {
 }
 
 //Handle "Register" command
-func (h *RegisterHandler) Handle(cmd NCCCommand) {
+func (h *RegisterHandler) Handle(cmd c.NCCCommand) {
 	log.Println("Successful registration")
 
 	h.conn.commandToSocket <- SubscribeCommand("callslist")

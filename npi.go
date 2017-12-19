@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"net/url"
+
+	c "github.com/arkaev/npilib/commands"
 )
 
 const (
@@ -28,7 +30,7 @@ type Conn struct {
 
 	parsers         map[string]Parser
 	handlers        map[string]Handler
-	commandToSocket chan NCCCommand
+	commandToSocket chan c.NCCCommand
 }
 
 // Options can be used to create a customized connection.
@@ -87,7 +89,7 @@ func Connect(url string, options Options) (*Conn, error) {
 
 	log.Println("Connected to socket")
 
-	nc.commandToSocket = make(chan NCCCommand)
+	nc.commandToSocket = make(chan c.NCCCommand)
 
 	nc.parsers = map[string]Parser{
 		"FullCallsList": nil,

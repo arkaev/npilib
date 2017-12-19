@@ -1,6 +1,7 @@
-package npilib
+package commands
 
 import (
+	"encoding/xml"
 	"fmt"
 	"testing"
 )
@@ -37,8 +38,11 @@ func TestFullBaddyListParse(t *testing.T) {
 		</FullBuddyList>
 	</NCC>`)
 
-	handler := &FullBuddyListParser{}
-	rs := handler.Unmarshal([]byte(cmd)).(*FullBuddyListRs)
+	var rs FullBuddyListRs
+	xml.Unmarshal(cmd, &rs)
+
+	assertEqual(t, rs.From, "naubuddy-20.node.domain")
+	assertEqual(t, rs.To, "naucrm-194.node.domain")
 
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Login, "ivr")
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Number, "0001")

@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"time"
+
+	c "github.com/arkaev/npilib/commands"
 )
 
 //Receiver for commands from socket
@@ -77,7 +79,7 @@ type CommandWrapper struct {
 	From    string
 	To      string
 	Data    []byte
-	Parsed  NCCCommand
+	Parsed  c.NCCCommand
 }
 
 func recognizeMessage(data []byte) *CommandWrapper {

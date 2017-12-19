@@ -1,4 +1,4 @@
-package npilib
+package commands
 
 import (
 	"encoding/xml"
@@ -55,18 +55,11 @@ type user struct {
 	Login string
 }
 
-//FullBuddyListHandler for "FullBuddyList" command
-type FullBuddyListHandler struct {
-	Handler
-	buddyList *fullBuddyList
-}
-
-//Handle "FullBuddyList" command
-func (h *FullBuddyListHandler) Handle(cmd NCCCommand) {}
-
 type FullBuddyListRs struct {
 	NCCCommand
 	XMLName       xml.Name `xml:"NCC"`
+	From          string   `xml:"from,attr"`
+	To            string   `xml:"to,attr"`
 	FullBuddyList *FullBuddyListRsMain
 }
 
@@ -126,17 +119,4 @@ type FullBuddyListRsGroup struct {
 
 type FullBuddyListRsUser struct {
 	Login string `xml:"login,attr"`
-}
-
-//FullBuddyListHandler for "FullBuddyList" command
-type FullBuddyListParser struct {
-	Parser
-}
-
-//Unmarshal "FullBuddyList" command
-func (h *FullBuddyListParser) Unmarshal(data []byte) NCCCommand {
-	var rs FullBuddyListRs
-	xml.Unmarshal(data, &rs)
-
-	return &rs
 }
