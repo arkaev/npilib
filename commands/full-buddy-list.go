@@ -58,53 +58,45 @@ type user struct {
 type FullBuddyListRs struct {
 	NCCCommand
 	XMLName       xml.Name `xml:"NCC"`
-	From          string   `xml:"from,attr"`
-	To            string   `xml:"to,attr"`
 	FullBuddyList *FullBuddyListRsMain
 }
 
 type FullBuddyListRsMain struct {
-	XMLName  xml.Name `xml:"FullBuddyList"`
 	Endpoint []*FullBuddyListRsEndpoint
 	Group    []*FullBuddyListRsGroup
 }
 
 type FullBuddyListRsEndpoint struct {
-	XMLName     xml.Name `xml:"Endpoint"`
-	Extensions  string   `xml:"extensions,attr"`
-	Login       string   `xml:"login,attr"`
-	Number      string   `xml:"number,attr"`
-	Type        string   `xml:"type,attr"`
-	DisplayName string   `xml:"displayname,attr"`
+	Extensions  string `xml:"extensions,attr"`
+	Login       string `xml:"login,attr"`
+	Number      string `xml:"number,attr"`
+	Type        string `xml:"type,attr"`
+	DisplayName string `xml:"displayname,attr"`
 	Numbers     *FullBuddyListRsNumbers
 	State       *FullBuddyListRsState
 	Addresses   *FullBuddyListRsAddresses
 }
 
 type FullBuddyListRsState struct {
-	XMLName   xml.Name `xml:"State"`
-	Reason    string   `xml:"reason,attr"`
-	Value     string   `xml:"value,attr"`
-	Timestamp uint64   `xml:"timestamp,attr"`
-	SubState  *FullBuddyListRsSubState
+	Reason    string `xml:"reason,attr"`
+	Value     string `xml:"value,attr"`
+	Timestamp uint64 `xml:"timestamp,attr"`
+	SubState  []*FullBuddyListRsSubState
 }
 
 type FullBuddyListRsSubState struct {
-	XMLName   xml.Name `xml:"SubState"`
-	Timestamp uint64   `xml:"timestamp,attr"`
-	Value     bool     `xml:"value,attr"`
-	Name      string   `xml:"name,attr"`
+	Timestamp uint64 `xml:"timestamp,attr"`
+	Value     bool   `xml:"value,attr"`
+	Name      string `xml:"name,attr"`
 }
 
 type FullBuddyListRsNumbers struct {
-	XMLName xml.Name `xml:"Numbers"`
-	Number  []*FullBuddyListRsNumber
+	Number []*FullBuddyListRsNumber
 }
 
 type FullBuddyListRsNumber struct {
-	XMLName xml.Name `xml:"Number"`
-	Default bool     `xml:"default,attr"`
-	Value   string   `xml:"value,attr"`
+	Default bool   `xml:"default,attr"`
+	Value   string `xml:"value,attr"`
 }
 
 type FullBuddyListRsAddresses struct {

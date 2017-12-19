@@ -24,6 +24,7 @@ func TestFullBaddyListParse(t *testing.T) {
 				</Numbers>
 				<State reason="some_reason" value="available" timestamp="1512709577">
 					<SubState timestamp="1512709577" value="true" name="normal"/>
+					<SubState timestamp="123" value="false" name="wrapup"/>
 				</State>
 			</Endpoint>
 			<Group login="root" number="root" displayname="Тестовая компания">
@@ -41,9 +42,6 @@ func TestFullBaddyListParse(t *testing.T) {
 	var rs FullBuddyListRs
 	xml.Unmarshal(cmd, &rs)
 
-	assertEqual(t, rs.From, "naubuddy-20.node.domain")
-	assertEqual(t, rs.To, "naucrm-194.node.domain")
-
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Login, "ivr")
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Number, "0001")
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].Type, "ivr")
@@ -60,9 +58,13 @@ func TestFullBaddyListParse(t *testing.T) {
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.Value, "available")
 	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.Timestamp, uint64(1512709577))
 
-	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState.Timestamp, uint64(1512709577))
-	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState.Value, true)
-	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState.Name, "normal")
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[0].Timestamp, uint64(1512709577))
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[0].Value, true)
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[0].Name, "normal")
+
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[1].Timestamp, uint64(123))
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[1].Value, false)
+	assertEqual(t, rs.FullBuddyList.Endpoint[1].State.SubState[1].Name, "wrapup")
 
 	assertEqual(t, rs.FullBuddyList.Group[1].Login, "servers")
 	assertEqual(t, rs.FullBuddyList.Group[1].Number, "servers")

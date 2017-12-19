@@ -1,22 +1,14 @@
 package commands
 
-// //FullCallsListHandler for "FullCallsList" command
-// type FullCallsListHandler struct {
-// 	Handler
-// 	timeT uint64
-// }
+import "encoding/xml"
 
-// //Unmarshal "FullCallsList" command
-// func (h *FullCallsListHandler) Unmarshal(node *Node) Handler {
-// 	timeStr := node.Attributes["time_t"]
-// 	timeT, err := strconv.ParseUint(timeStr, 10, 64)
-// 	if err != nil {
-// 		log.Printf("Error parsing '%s'. %v\n", timeStr, err)
-// 	}
+type FullCallsList struct {
+	XMLName       xml.Name `xml:"NCC"`
+	From          string   `xml:"from,attr"`
+	To            string   `xml:"to,attr"`
+	FullCallsList *FullCallsListMain
+}
 
-// 	h.timeT = timeT
-// 	return h
-// }
-
-// //Handle "FullCallsList" command
-// func (h *FullCallsListHandler) Handle() {}
+type FullCallsListMain struct {
+	TimeT uint64 `xml:"time_t,attr"`
+}
