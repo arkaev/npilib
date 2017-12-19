@@ -1,6 +1,7 @@
 package npilib
 
 import (
+	"encoding/xml"
 	"log"
 	"strconv"
 )
@@ -146,23 +147,73 @@ func (h *FullBuddyListHandler) Unmarshal(node *Node) Handler {
 //Handle "FullBuddyList" command
 func (h *FullBuddyListHandler) Handle() {}
 
-//FullCallsListHandler for "FullCallsList" command
-type FullCallsListHandler struct {
-	Handler
-	timeT uint64
+type FullBuddyListRs struct {
+	XMLName       xml.Name `xml:"NCC"`
+	FullBuddyList *FullBuddyListRsMain
 }
 
-//Unmarshal "FullCallsList" command
-func (h *FullCallsListHandler) Unmarshal(node *Node) Handler {
-	timeStr := node.Attributes["time_t"]
-	timeT, err := strconv.ParseUint(timeStr, 10, 64)
-	if err != nil {
-		log.Printf("Error parsing '%s'. %v\n", timeStr, err)
-	}
-
-	h.timeT = timeT
-	return h
+type FullBuddyListRsMain struct {
+	XMLName  xml.Name `xml:"FullBuddyList"`
+	Endpoint []*FullBuddyListRsEndpoint
+	Group    []*FullBuddyListRsGroup
 }
 
-//Handle "FullCallsList" command
-func (h *FullCallsListHandler) Handle() {}
+type FullBuddyListRsEndpoint struct {
+	XMLName     xml.Name `xml:"Endpoint"`
+	Extensions  string   `xml:"extensions,attr"`
+	Login       string   `xml:"login,attr"`
+	Number      string   `xml:"number,attr"`
+	Type        string   `xml:"type,attr"`
+	DisplayName string   `xml:"displayname,attr"`
+	Numbers     *FullBuddyListRsNumbers
+	State       *FullBuddyListRsState
+	Addresses   *FullBuddyListRsAddresses
+}
+
+type FullBuddyListRsState struct {
+	XMLName   xml.Name `xml:"State"`
+	Reason    string   `xml:"reason,attr"`
+	Value     string   `xml:"value,attr"`
+	Timestamp uint64   `xml:"timestamp,attr"`
+	SubState  *FullBuddyListRsSubState
+}
+
+type FullBuddyListRsSubState struct {
+	XMLName   xml.Name `xml:"SubState"`
+	Timestamp uint64   `xml:"timestamp,attr"`
+	Value     bool     `xml:"value,attr"`
+	Name      string   `xml:"name,attr"`
+}
+
+type FullBuddyListRsNumbers struct {
+	XMLName xml.Name `xml:"Numbers"`
+	Number  []*FullBuddyListRsNumber
+}
+
+type FullBuddyListRsNumber struct {
+	XMLName xml.Name `xml:"Number"`
+	Default bool     `xml:"default,attr"`
+	Value   string   `xml:"value,attr"`
+}
+
+type FullBuddyListRsAddresses struct {
+}
+
+type FullBuddyListRsGroup struct {
+	Login       string `xml:"login,attr"`
+	Number      string `xml:"number,attr"`
+	DisplayName string `xml:"displayname,attr"`
+	User        []*FullBuddyListRsUser
+}
+
+type FullBuddyListRsUser struct {
+	Login string `xml:"login,attr"`
+}
+
+//Parse "FullBuddyList" command
+func (h *FullBuddyListHandler) Parse(data []byte) *FullBuddyListRs {
+	var rs FullBuddyListRs
+	xml.Unmarshal(data, &rs)
+
+	return &rs
+}
