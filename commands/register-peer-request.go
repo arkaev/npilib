@@ -21,3 +21,14 @@ type RegisterPeerRqParams struct {
 	MinProtocol int    `xml:"min_protocol,attr"`
 	Role        string `xml:"role,attr"`
 }
+
+//CreateRegisterPeerCommand will construct RegisterPeer command
+func CreateRegisterPeerCommand(login string) NCCCommand {
+	return &RegisterPeerRq{
+		Request: &RegisterPeerRqRequest{Name: "RegisterPeer",
+			Params: &RegisterPeerRqParams{
+				Login:       login,
+				MaxProtocol: 0,
+				MinProtocol: 0,
+				Role:        "service"}}}
+}

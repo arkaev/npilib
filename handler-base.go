@@ -7,9 +7,3 @@ type Parser interface {
 	//Unmarshal node to command pojo
 	Unmarshal(data []byte) c.NCCCommand
 }
-
-//Handler process command with name
-type Handler interface {
-	//Handle command and process
-	Handle(cmd c.NCCCommand)
-}

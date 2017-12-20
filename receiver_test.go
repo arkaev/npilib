@@ -11,8 +11,7 @@ func TestRecognizeNCCNRequest(t *testing.T) {
 </NCCN>`)
 
 	msg := recognizeMessage(cmd)
-	if msg.NCC != "NCCN" ||
-		msg.Command != "Authenticate" ||
+	if msg.Subject != "Request:Authenticate" ||
 		msg.Data == nil {
 		t.Error("Not recognized")
 	}
@@ -27,8 +26,7 @@ func TestRecognizeNCCNResponse(t *testing.T) {
 </NCCN>`)
 
 	msg := recognizeMessage(cmd)
-	if msg.NCC != "NCCN" ||
-		msg.Command != "RegisterPeer" ||
+	if msg.Subject != "Response:RegisterPeer" ||
 		msg.Data == nil {
 		t.Error("Not recognized")
 	}
@@ -41,8 +39,7 @@ func TestRecognizeNCCResponse(t *testing.T) {
  </Response></NCC>`)
 
 	msg := recognizeMessage(cmd)
-	if msg.NCC != "NCC" ||
-		msg.Command != "Subscribe" ||
+	if msg.Subject != "Response:Subscribe" ||
 		msg.From != "naubuddy-20.node.domain" ||
 		msg.To != "naucrm-191.node.domain" ||
 		msg.Data == nil {
@@ -58,8 +55,7 @@ func TestRecognizeCommandWithTag(t *testing.T) {
 </NCC>`)
 
 	msg := recognizeMessage(cmd)
-	if msg.NCC != "NCC" ||
-		msg.Command != "FullBuddyList" ||
+	if msg.Subject != "FullBuddyList" ||
 		msg.Data == nil {
 		t.Error("Not recognized")
 	}

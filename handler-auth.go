@@ -22,24 +22,18 @@ func (h *AuthenificateRqParser) Unmarshal(data []byte) c.NCCCommand {
 	return &auth
 }
 
-//AuthenificateHandler for "Authenificate" command
-type AuthenificateHandler struct {
-	Handler
-	conn *Conn
-}
-
-//Handle "Authenificate" command
-func (h *AuthenificateHandler) Handle(cmd c.NCCCommand) {
-	auth := cmd.(*c.AuthentificateRq)
+//HandleAuthenificate will process "Authenificate" message
+func HandleAuthenificate(nc *Conn, msg *Msg) {
+	auth := msg.Parsed.(*c.AuthentificateRq)
 	params := auth.Request.Params
 
-	value := calculateMD5(h.conn.digest, params.Nonce, params.Method, params.URI)
+	value := calculateMD5(nc.digest, params.Nonce, params.Method, params.URI)
 	value = strings.ToLower(value)
 
-	h.conn.commandToSocket <- &c.AuthenticateRs{
+	nc.Publish(&c.AuthenticateRs{
 		Response: &c.AuthenticateRsResponse{
 			Name:  "Authenticate",
-			Param: &c.AuthenticateRsParam{Name: "response", Value: value}}}
+			Param: &c.AuthenticateRsParam{Name: "response", Value: value}}})
 }
 
 func calculateMD5(digest, nonce, method, uri string) string {

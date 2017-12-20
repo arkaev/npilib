@@ -17,3 +17,11 @@ type SubscribeRqParams struct {
 	Enabled bool   `xml:"enabled,attr"`
 	Instant bool   `xml:"instant,attr"`
 }
+
+//SubscribeCommand constuct
+func CreateSubscribeRq(list string) NCCCommand {
+	return &SubscribeRq{
+		Request: &SubscribeRqRequest{Name: "Subscribe",
+			Params: []*SubscribeRqParams{
+				&SubscribeRqParams{List: list, Enabled: true, Instant: true}}}}
+}

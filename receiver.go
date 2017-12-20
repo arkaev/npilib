@@ -7,14 +7,12 @@ import (
 	"io"
 	"log"
 	"time"
-
-	c "github.com/arkaev/npilib/commands"
 )
 
 //Receiver for commands from socket
 func startReceiver(nc *Conn) {
 	socketToDataCommand := make(chan []byte)
-	msgToHanlderChannel := make(chan *CommandWrapper)
+	msgToHanlderChannel := make(chan *Msg)
 
 	go func() {
 		bufReader := bufio.NewReader(nc.conn)
@@ -40,12 +38,12 @@ func startReceiver(nc *Conn) {
 			cmdData := <-socketToDataCommand
 			msg := recognizeMessage(cmdData)
 
-			_, exist := nc.handlers[msg.Command]
-			if !exist {
-				log.Printf("No handler found. Skipped command: %s\n", msg.Command)
+			subs, exist := nc.subs[msg.Subject]
+			if !exist || len(subs) == 0 {
+				log.Printf("No handlers found. Skipped command: %s\n", msg.Subject)
 				break
 			}
-			parser, exist := nc.parsers[msg.Command]
+			parser, exist := nc.parsers[msg.Subject]
 			if exist {
 				if parser != nil {
 					msg.Parsed = parser.Unmarshal(msg.Data)
@@ -53,7 +51,7 @@ func startReceiver(nc *Conn) {
 				msg.Data = nil
 				msgToHanlderChannel <- msg
 			} else {
-				log.Printf("Parser not found for command: %s\n", msg.Command)
+				log.Printf("Parser not found for command: %s\n", msg.Subject)
 			}
 		}
 	}()
@@ -62,31 +60,23 @@ func startReceiver(nc *Conn) {
 		for {
 			msg := <-msgToHanlderChannel
 
-			handler, exist := nc.handlers[msg.Command]
+			subs, exist := nc.subs[msg.Subject]
 			if exist {
-				handler.Handle(msg.Parsed)
+				for _, handler := range subs {
+					handler(msg)
+				}
 			} else {
-				log.Printf("Unknown handler: %s\n", msg.Command)
+				log.Printf("Unknown handler: %s\n", msg.Subject)
 			}
 		}
 	}()
 }
 
-// CommandWrapper contains base information about command
-type CommandWrapper struct {
-	NCC     string
-	Command string
-	From    string
-	To      string
-	Data    []byte
-	Parsed  c.NCCCommand
-}
-
-func recognizeMessage(data []byte) *CommandWrapper {
+func recognizeMessage(data []byte) *Msg {
 	dataReader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(dataReader)
 
-	cmd := &CommandWrapper{Data: data}
+	cmd := &Msg{Data: data}
 	level := 0
 	for {
 		t, _ := decoder.Token()
@@ -98,7 +88,6 @@ func recognizeMessage(data []byte) *CommandWrapper {
 			level++
 			if level == 1 {
 				if se.Name.Local == "NCC" || se.Name.Local == "NCCN" {
-					cmd.NCC = se.Name.Local
 					for _, attr := range se.Attr {
 						if attr.Name.Local == "from" {
 							cmd.From = attr.Value
@@ -116,7 +105,7 @@ func recognizeMessage(data []byte) *CommandWrapper {
 				if se.Name.Local == "Request" || se.Name.Local == "Response" {
 					for _, attr := range se.Attr {
 						if attr.Name.Local == "name" {
-							cmd.Command = se.Name.Local + ":" + attr.Value
+							cmd.Subject = se.Name.Local + ":" + attr.Value
 							return cmd
 						}
 					}
@@ -125,7 +114,7 @@ func recognizeMessage(data []byte) *CommandWrapper {
 					return nil
 				}
 
-				cmd.Command = se.Name.Local
+				cmd.Subject = se.Name.Local
 				return cmd
 			}
 

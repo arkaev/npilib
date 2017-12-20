@@ -12,7 +12,7 @@ func startSender(nc *Conn) {
 	go func() {
 		for {
 			data := <-dataToSocket
-			nc.Send(data)
+			nc.send(data)
 			log.Println("Sent:\n" + string(data))
 		}
 	}()

@@ -26,42 +26,43 @@ type Conn struct {
 	peer            string
 	protocolVersion int
 	ssid            int64
-	subs            map[int64]*Subscription
+	subs            map[string]([]MsgHandler)
 
+	options         Options
 	parsers         map[string]Parser
-	handlers        map[string]Handler
 	commandToSocket chan c.NCCCommand
 }
 
+// ConnHandler is used for asynchronous events such as
+// disconnected and closed connections.
+type ConnHandler func(*Conn)
+
 // Options can be used to create a customized connection.
 type Options struct {
-	//KeyFile is url to key-file with authentification digest
-	KeyFile string
-}
+	// ClosedCB sets the closed handler that is called when a client will
+	// no longer be connected.
+	ClosedCB ConnHandler
 
-// A Subscription represents interest in a given subject.
-type Subscription struct {
-	sid int64
+	// DisconnectedCB sets the disconnected handler that is called
+	// whenever the connection is disconnected.
+	DisconnectedCB ConnHandler
 
-	// Subject that represents this subscription
-	Subject string
+	// ReconnectedCB sets the reconnected handler called whenever
+	// the connection is successfully reconnected.
+	ReconnectedCB ConnHandler
 
-	// Optional queue group name. If present, all subscriptions with the
-	// same name will form a distributed queue, and each message will
-	// only be processed by one member of the group.
-	Queue string
-
-	conn *Conn
-	mcb  MsgHandler
+	// RegisteredCB sets the callback that is invoked whenever
+	// registered on bus
+	RegisteredCB ConnHandler
 }
 
 // Msg is a structure used by Subscribers and PublishMsg().
 type Msg struct {
 	Subject string
-	Reply   string
+	From    string
+	To      string
 	Data    []byte
-	Sub     *Subscription
-	next    *Msg
+	Parsed  c.NCCCommand
 }
 
 // MsgHandler is a callback function that processes messages delivered to
@@ -70,95 +71,102 @@ type MsgHandler func(msg *Msg)
 
 //Connect create connection by address and keyFile
 func Connect(url string, options Options) (*Conn, error) {
-
-	nc := &Conn{}
-
-	auth, err := getAuthData(options.KeyFile)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	nc.digest = auth.MD5
-	log.Printf("Digest: %s\n", nc.digest)
-
-	nc.conn, err = net.Dial("tcp", url)
+	conn, err := net.Dial("tcp", url)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Println("Connected to socket")
 
-	nc.commandToSocket = make(chan c.NCCCommand)
+	nc := &Conn{
+		conn:            conn,
+		options:         options,
+		commandToSocket: make(chan c.NCCCommand),
+		subs:            make(map[string]([]MsgHandler)),
+		parsers: map[string]Parser{
+			"FullCallsList": nil,
+			"FullBuddyList": &FullBuddyListParser{},
 
-	nc.parsers = map[string]Parser{
-		"FullCallsList": nil,
-		"FullBuddyList": &FullBuddyListParser{},
+			"Response:RegisterPeer": &RegisterPeerRsParser{},
+			"Response:Register":     nil,
+			"Response:Subscribe":    nil,
 
-		"Response:RegisterPeer": &RegisterPeerRsParser{},
-		"Response:Register":     nil,
-		"Response:Subscribe":    nil,
-
-		"Request:Echo":         nil,
-		"Request:Authenticate": &AuthenificateRqParser{},
+			"Request:Echo":         nil,
+			"Request:Authenticate": &AuthenificateRqParser{},
+		},
 	}
 
-	nc.handlers = map[string]Handler{
-		"Event":   &DoNothingHandler{},
-		"Command": &DoNothingHandler{},
+	nc.Subscribe("Event", func(*Msg) {})
+	nc.Subscribe("Command", func(*Msg) {})
 
-		"DialPlan":             &DoNothingHandler{},
-		"DialplanUploadResult": &DoNothingHandler{},
+	nc.Subscribe("DialPlan", func(*Msg) {})
+	nc.Subscribe("DialplanUploadResult", func(*Msg) {})
 
-		"Success": &DoNothingHandler{},
-		"Failure": &DoNothingHandler{},
+	nc.Subscribe("Success", func(*Msg) {})
+	nc.Subscribe("Failure", func(*Msg) {})
 
-		"FullCallsList":  &DoNothingHandler{},
-		"FullBuddyList":  &FullBuddyListHandler{},
-		"ShortBuddyList": &DoNothingHandler{},
-		"BuddyListDiff":  &DoNothingHandler{},
+	nc.Subscribe("FullCallsList", func(*Msg) {})
+	nc.Subscribe("FullBuddyList", func(*Msg) {})
+	nc.Subscribe("ShortBuddyList", func(*Msg) {})
+	nc.Subscribe("BuddyListDiff", func(*Msg) {})
 
-		"LicenseUsage": &DoNothingHandler{},
-		"Progress":     &DoNothingHandler{},
+	nc.Subscribe("LicenseUsage", func(*Msg) {})
+	nc.Subscribe("Progress", func(*Msg) {})
 
-		"Response:RegisterPeer": &RegisterPeerHandler{conn: nc},
-		"Response:Register":     &RegisterHandler{conn: nc},
-		"Response:Subscribe":    &DoNothingHandler{},
-
-		"Request:Authenticate": &AuthenificateHandler{conn: nc},
-		"Request:Echo":         &EchoHandler{conn: nc},
-	}
+	nc.Subscribe("Response:RegisterPeer", func(msg *Msg) { HandleRegisterPeer(nc, msg) })
+	nc.Subscribe("Response:Register", func(*Msg) {
+		if nc.options.RegisteredCB != nil {
+			nc.options.RegisteredCB(nc)
+		}
+	})
+	nc.Subscribe("Response:Subscribe", func(*Msg) {})
+	nc.Subscribe("Request:Authenticate", func(msg *Msg) { HandleAuthenificate(nc, msg) })
+	nc.Subscribe("Request:Echo", func(*Msg) {
+		nccn := &c.EchoRs{Response: &c.EchoRsResponse{Name: "Echo"}}
+		nc.Publish(nccn)
+	})
 
 	startSender(nc)
 	startReceiver(nc)
 
-	nc.commandToSocket <- RegisterPeerCommand(auth)
-
 	return nc, nil
 }
 
-// subscribe is the internal subscribe function that indicates interest in a subject.
-func (nc *Conn) subscribe(subj, queue string, cb MsgHandler, ch chan *Msg) (*Subscription, error) {
-	sub := &Subscription{Subject: subj, Queue: queue, mcb: cb, conn: nc}
+// Register will start process of negotiating.
+func (nc *Conn) Register(keyFile string) {
+	auth, err := getAuthData(keyFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	sub.sid = nc.ssid
-	nc.subs[sub.sid] = sub
+	nc.digest = auth.MD5
+	log.Printf("Digest: %s\n", nc.digest)
 
-	return sub, nil
+	nc.commandToSocket <- c.CreateRegisterPeerCommand(auth.Login)
 }
 
 // Subscribe will execute handler on subject event
-func (nc *Conn) Subscribe(subj string, cb MsgHandler) (*Subscription, error) {
-	return nc.subscribe(subj, _EMPTY_, cb, nil)
+func (nc *Conn) Subscribe(subj string, cb MsgHandler) {
+	subjectSubscriptions := nc.subs[subj]
+	nc.subs[subj] = append(subjectSubscriptions, cb)
+}
+
+// Publish will send command to bus
+func (nc *Conn) Publish(cmd c.NCCCommand) {
+	nc.commandToSocket <- cmd
 }
 
 // Send will write data to socket
-func (nc *Conn) Send(cmd []byte) {
+func (nc *Conn) send(cmd []byte) {
 	nc.conn.Write(cmd)
 	nc.conn.Write([]byte{delimeter})
 }
 
 // Close will close the connection
 func (nc *Conn) Close() {
+	if nc.options.ClosedCB != nil {
+		nc.options.ClosedCB(nc)
+	}
 	nc.conn.Close()
 }

@@ -17,24 +17,17 @@ func (p *RegisterPeerRsParser) Unmarshal(data []byte) c.NCCCommand {
 	return &rq
 }
 
-//RegisterPeerHandler for "RegisterPeer" command
-type RegisterPeerHandler struct {
-	Handler
-	conn *Conn
-}
+//HandleRegisterPeer will process "RegisterPeer" command
+func HandleRegisterPeer(nc *Conn, msg *Msg) {
+	rs := msg.Parsed.(*c.RegisterPeerRs).Response.Params
+	nc.allowEncoding = rs.AllowEncoding
+	nc.domain = rs.Domain
+	nc.node = rs.Node
+	nc.peer = rs.Peer
+	nc.protocolVersion = rs.ProtocolVersion
 
-//Handle "RegisterPeer" command
-func (h *RegisterPeerHandler) Handle(cmd c.NCCCommand) {
-
-	rs := cmd.(*c.RegisterPeerRs).Response.Params
-	h.conn.allowEncoding = rs.AllowEncoding
-	h.conn.domain = rs.Domain
-	h.conn.node = rs.Node
-	h.conn.peer = rs.Peer
-	h.conn.protocolVersion = rs.ProtocolVersion
-
-	h.conn.commandToSocket <- &c.RegisterRq{
+	nc.Publish(&c.RegisterRq{
 		Request: &c.RegisterRqRequest{
 			Name:   "Register",
-			Params: &c.RegisterRqParams{ProtocolVersion: 600}}}
+			Params: &c.RegisterRqParams{ProtocolVersion: 600}}})
 }

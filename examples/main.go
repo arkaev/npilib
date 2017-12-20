@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/arkaev/npilib"
+	c "github.com/arkaev/npilib/commands"
 )
 
 const (
@@ -25,13 +26,25 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.Println("Started")
 
-	opts := npilib.Options{KeyFile: keyFile}
+	opts := npilib.Options{
+		RegisteredCB: func(nc *npilib.Conn) {
+			log.Println("Successful registration")
+		},
+	}
 
-	conn, err := npilib.Connect(url, opts)
+	nc, err := npilib.Connect(url, opts)
 	if err != nil {
 		log.Println(err)
 	}
-	defer conn.Close()
+	defer nc.Close()
+
+	nc.Subscribe("Response:Register", func(msg *npilib.Msg) {
+		nc.Publish(c.CreateSubscribeRq("callslist"))
+		nc.Publish(c.CreateSubscribeRq("buddylist"))
+	})
+
+	nc.Register(keyFile)
+
 	time.Sleep(time.Millisecond * 100000)
 
 	log.Println("Exit")
