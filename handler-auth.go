@@ -3,24 +3,11 @@ package npilib
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/xml"
 	"io"
 	"strings"
 
 	c "github.com/arkaev/npilib/commands"
 )
-
-type AuthenificateRqParser struct {
-	Parser
-}
-
-//Unmarshal "Authenificate" command
-func (h *AuthenificateRqParser) Unmarshal(data []byte) c.NCCCommand {
-	var auth c.AuthentificateRq
-	xml.Unmarshal(data, &auth)
-
-	return &auth
-}
 
 //HandleAuthenificate will process "Authenificate" message
 func HandleAuthenificate(nc *Conn, msg *Msg) {

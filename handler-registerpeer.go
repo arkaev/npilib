@@ -1,21 +1,8 @@
 package npilib
 
 import (
-	"encoding/xml"
-
 	c "github.com/arkaev/npilib/commands"
 )
-
-type RegisterPeerRsParser struct {
-	Parser
-}
-
-func (p *RegisterPeerRsParser) Unmarshal(data []byte) c.NCCCommand {
-	var rq c.RegisterPeerRs
-	xml.Unmarshal(data, &rq)
-
-	return &rq
-}
 
 //HandleRegisterPeer will process "RegisterPeer" command
 func HandleRegisterPeer(nc *Conn, msg *Msg) {
