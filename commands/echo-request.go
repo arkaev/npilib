@@ -13,3 +13,7 @@ type EchoRs struct {
 type EchoRsResponse struct {
 	Name string `xml:"name,attr"`
 }
+
+func CreateEchoResponse() NCCCommand {
+	return &EchoRs{Response: &EchoRsResponse{Name: "Echo"}}
+}

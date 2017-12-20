@@ -122,8 +122,7 @@ func Connect(url string, options Options) (*Conn, error) {
 	nc.Subscribe("Response:Subscribe", func(*Msg) {})
 	nc.Subscribe("Request:Authenticate", func(msg *Msg) { HandleAuthenificate(nc, msg) })
 	nc.Subscribe("Request:Echo", func(*Msg) {
-		nccn := &c.EchoRs{Response: &c.EchoRsResponse{Name: "Echo"}}
-		nc.Publish(nccn)
+		nc.Publish(c.CreateEchoResponse())
 	})
 
 	startSender(nc)
