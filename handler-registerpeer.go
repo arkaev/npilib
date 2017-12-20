@@ -26,8 +26,5 @@ func HandleRegisterPeer(nc *Conn, msg *Msg) {
 	nc.peer = rs.Peer
 	nc.protocolVersion = rs.ProtocolVersion
 
-	nc.Publish(&c.RegisterRq{
-		Request: &c.RegisterRqRequest{
-			Name:   "Register",
-			Params: &c.RegisterRqParams{ProtocolVersion: 600}}})
+	nc.Publish(c.CreateRegisterRequest(600))
 }

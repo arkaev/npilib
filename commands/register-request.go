@@ -5,14 +5,22 @@ import "encoding/xml"
 type RegisterRq struct {
 	XMLName xml.Name `xml:"NCC"`
 	NCCCommand
-	Request *RegisterRqRequest
+	Request *registerRqRequest
 }
 
-type RegisterRqRequest struct {
+type registerRqRequest struct {
 	Name   string `xml:"name,attr"`
-	Params *RegisterRqParams
+	Params *registerRqParams
 }
 
-type RegisterRqParams struct {
+type registerRqParams struct {
 	ProtocolVersion int `xml:"protocol_version,attr"`
+}
+
+// CreateRegisterRequest will return "Register" command
+func CreateRegisterRequest(protocolVersion int) NCCCommand {
+	return &RegisterRq{
+		Request: &registerRqRequest{
+			Name:   "Register",
+			Params: &registerRqParams{ProtocolVersion: protocolVersion}}}
 }

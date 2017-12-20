@@ -16,3 +16,10 @@ type AuthenticateRsParam struct {
 	Name  string `xml:"name,attr"`
 	Value string `xml:"value,attr"`
 }
+
+func CreateAuthenticateResponse(value string) NCCCommand {
+	return &AuthenticateRs{
+		Response: &AuthenticateRsResponse{
+			Name:  "Authenticate",
+			Param: &AuthenticateRsParam{Name: "response", Value: value}}}
+}

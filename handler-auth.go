@@ -30,10 +30,7 @@ func HandleAuthenificate(nc *Conn, msg *Msg) {
 	value := calculateMD5(nc.digest, params.Nonce, params.Method, params.URI)
 	value = strings.ToLower(value)
 
-	nc.Publish(&c.AuthenticateRs{
-		Response: &c.AuthenticateRsResponse{
-			Name:  "Authenticate",
-			Param: &c.AuthenticateRsParam{Name: "response", Value: value}}})
+	nc.Publish(c.CreateAuthenticateResponse(value))
 }
 
 func calculateMD5(digest, nonce, method, uri string) string {
