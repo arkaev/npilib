@@ -132,17 +132,17 @@ func Connect(url string, options Options) (*Conn, error) {
 }
 
 // Register will start process of negotiating.
-func (nc *Conn) Register(keyFile string) {
+func (nc *Conn) Register(keyFile string) error {
 	auth, err := getAuthData(keyFile)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
 	nc.digest = auth.MD5
 	log.Printf("Digest: %s\n", nc.digest)
 
 	nc.commandToSocket <- c.CreateRegisterPeerCommand(auth.Login)
+	return nil
 }
 
 // Subscribe will execute handler on subject event

@@ -46,7 +46,10 @@ func main() {
 		nc.Publish(c.CreateSubscribeRq("buddylist"))
 	})
 
-	nc.Register(keyFile)
+	err = nc.Register(keyFile)
+	if err != nil {
+		panic(err)
+	}
 
 	time.Sleep(5 * time.Second)
 
