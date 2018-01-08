@@ -30,11 +30,14 @@ func main() {
 		RegisteredCB: func(nc *npilib.Conn) {
 			log.Println("Successful registration")
 		},
+		ClosedCB: func(nc *npilib.Conn) {
+			log.Println("Closed connection")
+		},
 	}
 
 	nc, err := npilib.Connect(url, opts)
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 	defer nc.Close()
 
@@ -45,7 +48,7 @@ func main() {
 
 	nc.Register(keyFile)
 
-	time.Sleep(time.Millisecond * 100000)
+	time.Sleep(5 * time.Second)
 
 	log.Println("Exit")
 }

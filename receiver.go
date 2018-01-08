@@ -14,8 +14,8 @@ func startReceiver(nc *Conn) {
 	socketToDataCommand := make(chan []byte)
 	msgToHanlderChannel := make(chan *Msg)
 
-	go func() {
-		bufReader := bufio.NewReader(nc.conn)
+	go func(out chan []byte, client *Conn) {
+		bufReader := bufio.NewReader(client.conn)
 		for {
 			cmdData, err := bufReader.ReadBytes(delimeter)
 			if err != nil {
@@ -28,39 +28,36 @@ func startReceiver(nc *Conn) {
 				}
 			} else {
 				log.Printf("Received:\n%s\n", cmdData)
-				socketToDataCommand <- cmdData
+				out <- cmdData
 			}
 		}
-	}()
+	}(socketToDataCommand, nc)
 
-	go func() {
-		for {
-			cmdData := <-socketToDataCommand
+	go func(in chan []byte, out chan *Msg, client *Conn) {
+		for cmdData := range in {
 			msg := recognizeMessage(cmdData)
 
-			subs, exist := nc.subs[msg.Subject]
+			subs, exist := client.subs[msg.Subject]
 			if !exist || len(subs) == 0 {
 				log.Printf("No handlers found. Skipped command: %s\n", msg.Subject)
 				break
 			}
-			parser, exist := nc.parsers[msg.Subject]
+			parser, exist := client.parsers[msg.Subject]
 			if exist {
 				if parser != nil {
 					msg.Parsed = parser.Unmarshal(msg.Data)
 				}
 				msg.Data = nil
-				msgToHanlderChannel <- msg
+				out <- msg
 			} else {
 				log.Printf("Parser not found for command: %s\n", msg.Subject)
 			}
 		}
-	}()
+	}(socketToDataCommand, msgToHanlderChannel, nc)
 
-	go func() {
-		for {
-			msg := <-msgToHanlderChannel
-
-			subs, exist := nc.subs[msg.Subject]
+	go func(in chan *Msg, client *Conn) {
+		for msg := range in {
+			subs, exist := client.subs[msg.Subject]
 			if exist {
 				for _, handler := range subs {
 					handler(msg)
@@ -69,7 +66,7 @@ func startReceiver(nc *Conn) {
 				log.Printf("Unknown handler: %s\n", msg.Subject)
 			}
 		}
-	}()
+	}(msgToHanlderChannel, nc)
 }
 
 func recognizeMessage(data []byte) *Msg {
